@@ -12,12 +12,31 @@ class CarbonSegment(ElementOfSection):
         self._carbon_diagram: DiagramCarbon = DiagramCarbon(carbon_class=carbon)
         self._z: float = z  # distance form the bottom of the section to center of the carbon
         self.m_int: float = m_int  # initialisation moment for the carbon
-        self.calculate_with_carbon: bool = False
+        self._calculate_with_carbon: bool = False
+        self._calculate_with_top_plate: bool = False
         self.color_QColor = MyColors.carbon_stress
         self.m_1 = 0  # moment m_i-1
         self.e_top_1 = 0
         self.e_bottom_1 = 0
         self.e_init = 0
+
+    @property
+    def calculate_with_carbon(self) -> bool:
+        return self._calculate_with_carbon
+
+    @calculate_with_carbon.setter
+    def calculate_with_carbon(self, new_bool: bool):
+        self._calculate_with_carbon = new_bool
+        self._calculate_with_top_plate = False if new_bool else True
+
+    @property
+    def calculate_with_top_plate(self) -> bool:
+        return self._calculate_with_top_plate
+
+    @calculate_with_top_plate.setter
+    def calculate_with_top_plate(self, new_bool: bool):
+        self._calculate_with_top_plate = new_bool
+        self.__calculate_with_carbon = False if new_bool else True
 
     @property
     def area(self) -> float:

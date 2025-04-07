@@ -125,7 +125,9 @@ class GeneralWindow(QMainWindow):
         # addition layouts at the bottom
         extra_bottom_layout = QHBoxLayout()
         general_layout.addLayout(extra_bottom_layout)
-        self.checkbox_carbon = QCheckBox()
+        self.checkbox_addition_top_plate = QCheckBox(MenuNames.strengthening_concrete)
+        self.table_addition_top_plate = QTableWidget()
+        self.checkbox_carbon = QCheckBox(MenuNames.strengthening_carbon)
         self.table_carbon = QTableWidget()
         self.load_layout_extra_layout(extra_layout=extra_bottom_layout)
 
@@ -140,13 +142,12 @@ class GeneralWindow(QMainWindow):
     def load_concrete_strengthening(self, extra_layout: QHBoxLayout):
         layout_concrete_strengthening = QVBoxLayout()
         extra_layout.addLayout(layout_concrete_strengthening)
-        check_box = QCheckBox(MenuNames.strengthening_concrete)
-        layout_concrete_strengthening.addWidget(check_box)
+        self.checkbox_addition_top_plate.stateChanged.connect(self.calculate_with_top_plate)
+        layout_concrete_strengthening.addWidget(self.checkbox_addition_top_plate)
 
     def load_carbon_strengthening(self, extra_layout: QHBoxLayout):
         layout_carbon_strengthening = QVBoxLayout()
         extra_layout.addLayout(layout_carbon_strengthening)
-        self.checkbox_carbon = QCheckBox(MenuNames.strengthening_carbon)
         self.checkbox_carbon.stateChanged.connect(self.calculate_with_carbon)
         layout_carbon_strengthening.addWidget(self.checkbox_carbon)
 
@@ -193,6 +194,11 @@ class GeneralWindow(QMainWindow):
     def calculate_with_carbon(self, check: bool):
         self._section.carbon.calculate_with_carbon = bool(check)
         self.table_carbon.setEnabled(check)
+        self.draw_all()
+
+    def calculate_with_top_plate(self, check: bool):
+        self._section.carbon.calculate_with_carbon = bool(check)
+        self.table_addition_top_plate.setEnabled(check)
         self.draw_all()
 
     def selection_changed_carbon(self):
