@@ -104,8 +104,8 @@ class GeneralWindow(QMainWindow):
         bottom_layout = QHBoxLayout()
         concrete_layout = QVBoxLayout()
         self.combobox_objects_concrete_general = QComboBox()
-        self.button_plus = QPushButton("+")
-        self.button_minus = QPushButton("-")
+        self.button_plus_concrete = QPushButton("+")
+        self.button_minus_concrete = QPushButton("-")
         self.table_concrete = QTableWidget()
         self.option_plate_top_bottom = QVBoxLayout()
         bottom_layout.addLayout(concrete_layout)
@@ -348,6 +348,7 @@ class GeneralWindow(QMainWindow):
 
     def recalculate_it(self):
         self._section.is_calculated = self._section.recalculate()
+        self.slider.setValue(0)
         self.draw_date_and_results()
 
     def layout_normal_force_and_eccentricity(self, layout: QVBoxLayout):
@@ -501,11 +502,11 @@ class GeneralWindow(QMainWindow):
         layout_buttons = QHBoxLayout()
         layout.addLayout(layout_buttons)
         layout_buttons.addWidget(QLabel(MenuNames.label_concrete))
-        layout_buttons.addWidget(self.button_plus)
-        self.button_plus.clicked.connect(self.plus_an_element_of_concrete)
-        layout_buttons.addWidget(self.button_minus)
-        self.button_minus.clicked.connect(self.minus_an_element_of_concrete)
-        self.button_minus.setEnabled(False)
+        layout_buttons.addWidget(self.button_plus_concrete)
+        self.button_plus_concrete.clicked.connect(self.plus_an_element_of_concrete)
+        layout_buttons.addWidget(self.button_minus_concrete)
+        self.button_minus_concrete.clicked.connect(self.minus_an_element_of_concrete)
+        self.button_minus_concrete.setEnabled(False)
 
         # combobox concrete
         objects = MaterialVariables.concrete_class
@@ -636,7 +637,7 @@ class GeneralWindow(QMainWindow):
                    h_c / h * Menus.scale_canvas_section)
 
     def plus_an_element_of_concrete(self):
-        self.button_minus.setEnabled(True)
+        self.button_minus_concrete.setEnabled(True)
         new_element = self._section.add_copy_of_last_element_and_return_it(type_of_section=MaterialVariables.concrete)
         self.update_the_concrete_table()
 
@@ -652,9 +653,9 @@ class GeneralWindow(QMainWindow):
             row_i += 1
         #   buttons + -
         if len(self._section.list_of_concrete_sections) > 1:
-            self.button_minus.setEnabled(True)
+            self.button_minus_concrete.setEnabled(True)
         else:
-            self.button_minus.setEnabled(False)
+            self.button_minus_concrete.setEnabled(False)
         concrete = new_list_of_concrete_sections[0].concrete.name_of_class
         index = MaterialVariables.concrete_class.index(concrete)
         self.combobox_objects_concrete_general.setCurrentIndex(index)
@@ -662,7 +663,7 @@ class GeneralWindow(QMainWindow):
 
     def minus_an_element_of_concrete(self):
         if len(self._section.list_of_concrete_sections) == 2:
-            self.button_minus.setEnabled(False)
+            self.button_minus_concrete.setEnabled(False)
         self._section.remove_last_element(type_of_section=MaterialVariables.concrete)
         row = 0
         self.table_concrete.removeRow(row)
@@ -1009,6 +1010,9 @@ class GeneralWindow(QMainWindow):
         for section_i in reversed(self._section.list_of_steel):
             self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
             row_i += 1
+        # + - buttons
+        if n > 1:
+            self.button_minus_steel.setEnabled(True)
         self.draw_date_and_results()
 
     def minus_an_element_of_steel(self):
@@ -1081,7 +1085,7 @@ class GeneralWindow(QMainWindow):
         self.draw_the_graph(result=result)
 
     def make_result_for_mi(self, mi: float) -> Result | None:
-        """the function interpolate new graphic for current mi"""
+        """the function interpolate new graphic for current m_i"""
         if mi == 0:
             return None
         if mi <= list(self._section.result.keys())[0]:
