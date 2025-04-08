@@ -192,14 +192,21 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
 
     def calculate_with_carbon(self, check: bool):
+
         self._section.carbon.calculate_with_carbon = bool(check)
         self.table_carbon.setEnabled(check)
         self.draw_all()
+        if check == 0:
+            return None
+        self.checkbox_addition_top_plate.setChecked(False)
 
     def calculate_with_top_plate(self, check: bool):
-        self._section.carbon.calculate_with_carbon = bool(check)
+        self._section.carbon.calculate_with_top_plate = bool(check)
         self.table_addition_top_plate.setEnabled(check)
         self.draw_all()
+        if check == 0:
+            return None
+        self.checkbox_carbon.setChecked(False)
 
     def selection_changed_carbon(self):
         pass

@@ -119,6 +119,7 @@ class ASteelLine(ElementOfSection):
         self._e0 = self._steel.get_e_from_s(typ_of_diagram=typ_of_diagram, s=s0)
         self._color_rgba = get_random_color()
         self._color_str = get_str_from_color(color_rgba=self._color_rgba)
+        self.e_init = 0
 
     @staticmethod
     def _get_diagram_for_the_steel(new_steel) -> DiagramSteel | DiagramCarbon:
@@ -198,6 +199,20 @@ class ASteelLine(ElementOfSection):
 
     def update_s0(self, type_of_diagram: int):
         self._e0 = self._steel.get_e_from_s(typ_of_diagram=type_of_diagram, s=self._s0)
+
+    def calculate_e_init(self, result__1: Result, result_1: Result, m_init: float, h: float):
+        """
+        :param h:
+        :param m_init:
+        :param result_1:    result i +1
+        :param result__1:  result i -1
+        """
+        m__1 = result__1.moment
+        m_1 = result_1.moment
+        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._z)
+        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._z)
+        e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
+        self.e_init = e_init
 
 
 def get_random_color() -> list[int]:

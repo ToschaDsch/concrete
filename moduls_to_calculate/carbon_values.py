@@ -9,7 +9,7 @@ class CarbonSegment(ElementOfSection):
                  carbon: str = InitiationValues.default_carbon_class):
         self._carbon_class = carbon
         self._area: float = a  # area, cm2)
-        self._carbon_diagram: DiagramCarbon = DiagramCarbon(carbon_class=carbon)
+        self._carbon_diagram: DiagramCarbon = self._get_diagram_for_the_carbon(new_steel=carbon)
         self._z: float = z  # distance form the bottom of the section to center of the carbon
         self.m_int: float = m_int  # initialisation moment for the carbon
         self._calculate_with_carbon: bool = False
@@ -19,6 +19,13 @@ class CarbonSegment(ElementOfSection):
         self.e_top_1 = 0
         self.e_bottom_1 = 0
         self.e_init = 0
+
+    @staticmethod
+    def _get_diagram_for_the_carbon(new_steel) -> DiagramSteel | DiagramCarbon:
+        if new_steel in MaterialVariables.steel_for_concrete:
+            return DiagramSteel(steel_type=new_steel)
+        elif new_steel in MaterialVariables.carbon_class:
+            return DiagramCarbon(carbon_class=new_steel)
 
     @property
     def calculate_with_carbon(self) -> bool:
@@ -36,7 +43,7 @@ class CarbonSegment(ElementOfSection):
     @calculate_with_top_plate.setter
     def calculate_with_top_plate(self, new_bool: bool):
         self._calculate_with_top_plate = new_bool
-        self.__calculate_with_carbon = False if new_bool else True
+        self._calculate_with_carbon = False if new_bool else True
 
     @property
     def area(self) -> float:
@@ -53,7 +60,7 @@ class CarbonSegment(ElementOfSection):
     @carbon_class.setter
     def carbon_class(self, new_class: str):
         self._carbon_class = new_class
-        self._carbon_diagram: DiagramCarbon = DiagramCarbon(carbon_class=new_class)
+        self._carbon_diagram: DiagramCarbon = self._get_diagram_for_the_carbon(new_steel=new_class)
 
     @property
     def z(self) -> float:
@@ -66,10 +73,6 @@ class CarbonSegment(ElementOfSection):
     @property
     def carbon_diagram(self):
         return self._carbon_diagram
-
-    @carbon_diagram.setter
-    def carbon_diagram(self, new_diagram: DiagramCarbon):
-        self._carbon_diagram = new_diagram
 
     def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> (float, float):
         """the function returns normal force and moment relative of bottom of the section
@@ -106,7 +109,6 @@ class CarbonSegment(ElementOfSection):
         ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._z)
         e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
         self.e_init = e_init
-        print('e_init = ', e_init)
 
 
 def get_ei_from_eo_eu_z_h(eo: float, eu: float, h: float, z: float) -> float:
