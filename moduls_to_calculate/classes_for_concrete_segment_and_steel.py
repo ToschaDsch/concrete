@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor
 
 from moduls_to_calculate.carbon_diagramm import DiagramCarbon
 from moduls_to_calculate.diagram import DiagramConcrete, DiagramSteel
-from variables.variables_for_material import ResultGraphConcrete, ResultGraphSteel, MaterialVariables
+from variables.variables_for_material import ResultGraphConcrete, ResultGraphSteel, MaterialVariables, Result
 from variables.variables_the_program import InitiationValues
 
 

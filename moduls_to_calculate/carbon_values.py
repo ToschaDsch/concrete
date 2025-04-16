@@ -2,6 +2,8 @@ from moduls_to_calculate.carbon_diagramm import DiagramCarbon
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import ElementOfSection
 from variables.variables_for_material import ResultGraphSteel, Result
 from variables.variables_the_program import InitiationValues, MyColors
+from moduls_to_calculate.diagram import DiagramSteel
+from variables.variables_for_material import MaterialVariables
 
 
 class CarbonSegment(ElementOfSection):
@@ -34,7 +36,6 @@ class CarbonSegment(ElementOfSection):
     @calculate_with_carbon.setter
     def calculate_with_carbon(self, new_bool: bool):
         self._calculate_with_carbon = new_bool
-        self._calculate_with_top_plate = False if new_bool else True
 
     @property
     def calculate_with_top_plate(self) -> bool:
@@ -43,7 +44,6 @@ class CarbonSegment(ElementOfSection):
     @calculate_with_top_plate.setter
     def calculate_with_top_plate(self, new_bool: bool):
         self._calculate_with_top_plate = new_bool
-        self._calculate_with_carbon = False if new_bool else True
 
     @property
     def area(self) -> float:
