@@ -51,6 +51,19 @@ class InitiationValues:
     default_concrete_class: str = MaterialVariables.concrete_class[3]
     default_steel_class: str = MaterialVariables.steel_for_concrete[0]
     default_carbon_class: str = MaterialVariables.carbon_class[0]
+    # concrete
+    b_concrete = 10
+    h_concrete = 20
+    # steel
+    diameter_steel = 8
+    m_steel = 1
+    n_steel = 2
+    y_steel = 5
+    s0_steel = 0
+    # carbon
+    a_carbon = 5
+    z_carbon = 2
+    m_int_carbon = 2
 
 
 @dataclass
@@ -104,6 +117,8 @@ class MenuNames:
     label_steel = "Bewehrung"
     strengthening_concrete = "Verstärkung mit Beton oben"
     strengthening_carbon = "Verstärkung mit carbon unten"
+    b_is = 'b = , m'    # for addition plate
+    h_is = 'h = , m'    # for addition plate
 
 @dataclass
 class Names:

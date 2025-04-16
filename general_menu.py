@@ -125,6 +125,9 @@ class GeneralWindow(QMainWindow):
         # addition layouts at the bottom
         extra_bottom_layout = QHBoxLayout()
         general_layout.addLayout(extra_bottom_layout)
+        self.combobox_addition_concrete = QComboBox()
+        self.line_edit_b = QLineEdit('')
+        self.line_edit_h = QLineEdit()
         self.checkbox_addition_top_plate = QCheckBox(MenuNames.strengthening_concrete)
         self.table_addition_top_plate = QTableWidget()
         self.checkbox_carbon = QCheckBox(MenuNames.strengthening_carbon)
@@ -144,7 +147,43 @@ class GeneralWindow(QMainWindow):
         extra_layout.addLayout(layout_concrete_strengthening)
         self.checkbox_addition_top_plate.stateChanged.connect(self.calculate_with_top_plate)
         layout_concrete_strengthening.addWidget(self.checkbox_addition_top_plate)
+        self.load_concrete_strengthening_plate(layout=layout_concrete_strengthening)
 
+    def load_concrete_strengthening_plate(self, layout: QVBoxLayout):
+        layout_concrete = QHBoxLayout()
+        label = QLabel(MenuNames.label_concrete)
+        layout_concrete.addWidget(label)
+
+        # combobox addition concrete
+        objects = MaterialVariables.concrete_class
+        for name_i in objects:
+            self.combobox_addition_concrete.addItem(name_i)
+        self.combobox_addition_concrete.setEnabled(False)
+        self.combobox_addition_concrete.setCurrentIndex(3)
+        self.combobox_addition_concrete.currentIndexChanged.connect(
+            self.change_index_of_combobox_addition_concrete)
+        layout_concrete.addWidget(self.combobox_addition_concrete)
+
+        # b =
+        label_b = QLabel(MenuNames.b_is)
+        layout_concrete.addWidget(label_b)
+        self.line_edit_b.textChanged.connect(self.text_changed_b_addition_plate)
+        layout_concrete.addWidget(self.line_edit_b)
+
+        # h =
+        label_h = QLabel(MenuNames.h_is)
+        layout_concrete.addWidget(label_h)
+        self.line_edit_h.textChanged.connect(self.text_changed_h_addition_plate)
+        layout_concrete.addWidget(self.line_edit_h)
+
+        layout.addLayout(layout_concrete)
+
+
+    def text_changed_b_addition_plate(self, new_text: str):
+        print(new_text)
+
+    def text_changed_h_addition_plate(self, new_text: str):
+        print(new_text)
 
     def load_carbon_strengthening(self, extra_layout: QHBoxLayout):
         layout_carbon_strengthening = QVBoxLayout()
@@ -197,20 +236,17 @@ class GeneralWindow(QMainWindow):
         self._section.carbon.calculate_with_carbon = bool(check)
         self.table_carbon.setEnabled(check)
         self.draw_all()
-        if check == 0:
-            return None
         self.checkbox_addition_top_plate.setChecked(False)
 
     def calculate_with_top_plate(self, check: bool):
-        self._section.carbon.calculate_with_top_plate = bool(check)
+        self._section.addition_concrete.calculate_with_top_plate = bool(check)
 
         self.table_addition_top_plate.setEnabled(check)
-        print(self._section.carbon.calculate_with_carbon)
+        self.combobox_addition_concrete.setEnabled(check)
+        self.line_edit_b.setEnabled(check)
+        self.line_edit_h.setEnabled(check)
         self.checkbox_carbon.setChecked(False)
         self.draw_all()
-
-        if check == 0:
-            return None
 
 
     def selection_changed_carbon(self):
@@ -538,6 +574,11 @@ class GeneralWindow(QMainWindow):
     def change_index_of_combobox_object_concrete_general(self, index):
         """new concrete class"""
         self._section.concrete_class = MaterialVariables.concrete_class[index]
+        self.draw_date_and_results()
+
+    def change_index_of_combobox_addition_concrete(self, index):
+        """new concrete class"""
+        self._section.addition_concrete.concrete_class = MaterialVariables.concrete_class[index]
         self.draw_date_and_results()
 
     def concrete_table_changed_item(self, item) -> None | bool:

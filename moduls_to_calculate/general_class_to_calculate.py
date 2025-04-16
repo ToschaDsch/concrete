@@ -7,6 +7,40 @@ from PySide6.QtGui import QColor
 from variables.variables_the_program import MyColors, InitiationValues
 
 
+class AdditionConcrete:
+    def __init__(self, concrete_class: str = InitiationValues.default_concrete_class,
+                 type_of_diagram_steel: int = 0, type_of_diagram_concrete: int = 0, n: int = InitiationValues.n,
+                 normal_force: float = InitiationValues.normal_force,
+                 eccentricity: float = InitiationValues.eccentricity,
+                 dn: float = InitiationValues.d_n):
+        self._list_of_concrete_sections: [AConcreteSection | ElementOfSection] = [AConcreteSection()]
+        self._list_of_steel: [ASteelLine | ElementOfSection] = [ASteelLine()]
+        self._concrete_class: str = concrete_class
+        self._concrete_diagram = DiagramConcrete(concrete_class=concrete_class)
+        self._type_of_diagram_steel = 0
+        self._calculate_with_top_plate: bool = False
+        self.type_of_diagram_concrete = 0
+
+    @property
+    def calculate_with_top_plate(self):
+        return self._calculate_with_top_plate
+
+    @calculate_with_top_plate.setter
+    def calculate_with_top_plate(self, new_value: bool):
+        self._calculate_with_top_plate = new_value
+
+    @property
+    def concrete_class(self):
+        return self._concrete_class
+
+    @concrete_class.setter
+    def concrete_class(self, new_class: str):
+        self._concrete_class = new_class
+        self._concrete_diagram = DiagramConcrete(concrete_class=new_class)
+        for concrete_section in self._list_of_concrete_sections:
+            concrete_section.concrete = new_class
+
+
 class AllElementsOfTheSection:
     n_points_for_graph = 40
 
@@ -30,6 +64,7 @@ class AllElementsOfTheSection:
         self._result = dict()
         self._eccentricity = eccentricity
         self.carbon = CarbonSegment()
+        self.addition_concrete = AdditionConcrete()
 
     @property
     def eccentricity(self):
@@ -89,7 +124,7 @@ class AllElementsOfTheSection:
                                         list_of_steel=self._list_of_steel, concrete_diagram=self._concrete_diagram,
                                         type_of_diagram_concrete=self.type_of_diagram_concrete,
                                         type_of_diagram_steel=self.type_of_diagram_steel,
-                                        dn_max=self._dn, carbon=self.carbon,  m_init=self.carbon.m_int,
+                                        dn_max=self._dn, carbon=self.carbon, m_init=self.carbon.m_int,
                                         calculate_with_carbon=self.carbon.calculate_with_carbon)
         return True if len(self._result) > 0 else False
 

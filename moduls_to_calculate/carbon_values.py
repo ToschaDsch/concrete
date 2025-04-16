@@ -15,7 +15,6 @@ class CarbonSegment(ElementOfSection):
         self._z: float = z  # distance form the bottom of the section to center of the carbon
         self.m_int: float = m_int  # initialisation moment for the carbon
         self._calculate_with_carbon: bool = False
-        self._calculate_with_top_plate: bool = False
         self.color_QColor = MyColors.carbon_stress
         self.m_1 = 0  # moment m_i-1
         self.e_top_1 = 0
