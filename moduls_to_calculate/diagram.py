@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from PySide6.QtGui import QColor
 
@@ -20,7 +21,7 @@ class Diagram(ABC):
         pass
 
     @abstractmethod
-    def important_coordinate(self, typ_of_diagram: int = 0) -> ([float, float], [float, float]):
+    def important_coordinate(self, typ_of_diagram: int = 0) -> None:
         pass
 
 
@@ -66,14 +67,15 @@ class DiagramConcrete(Diagram):
                 else:
                     return None
 
-    def get_max_x_y(self, typ_of_diagram: int = 0) -> tuple[float, float]:
+    def get_max_x_y(self, typ_of_diagram: int = 0) -> tuple[float, float] | None:
         match typ_of_diagram:
             case 0:
                 return self._ecu2, self._fcd
             case 1:
                 return self._ecu1, self._fcm
 
-    def important_coordinate(self, typ_of_diagram: int = 0) -> ([float, float], [float, float]):
+    def important_coordinate(self, typ_of_diagram: int = 0) -> None | tuple[list[float], list[float | Any]] | tuple[
+        list[float], list[float]]:
         match typ_of_diagram:
             case 0:
                 return [self._ec2, self._fcd], [self._ecu2, self._fcd]
@@ -139,14 +141,15 @@ class DiagramSteel(Diagram):
     def name_of_class(self):
         return self._steel_type
 
-    def get_max_x_y(self, typ_of_diagram: int = 0) -> tuple[float, float]:
+    def get_max_x_y(self, typ_of_diagram: int = 0) -> None | tuple[float, float] | tuple[float, float | Any]:
         match typ_of_diagram:
             case 0:
                 return self._eud, self._fd
             case 1:
                 return self._eud, self._fdk
 
-    def important_coordinate(self, typ_of_diagram: int = 0) -> ([float, float], [float, float]):
+    def important_coordinate(self, typ_of_diagram: int = 0) -> None | tuple[list[float | Any], list[float]] | tuple[
+        list[float | Any], list[float | Any]]:
         match typ_of_diagram:
             case 0:
                 return [self._e0, self._fd], [self._eud, self._fd]
@@ -155,7 +158,7 @@ class DiagramSteel(Diagram):
 
 
 class DiagramToDraw:
-    def __init__(self, coordinates: [], important_coordinate: [], color: QColor):
-        self.coordinates: [] = coordinates
-        self.important_coordinate = important_coordinate
-        self.color = color
+    def __init__(self, coordinates: list, important_coordinate: list, color: QColor):
+        self.coordinates: list = coordinates
+        self.important_coordinate: list = important_coordinate
+        self.color: QColor = color

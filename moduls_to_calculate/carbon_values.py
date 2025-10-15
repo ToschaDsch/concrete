@@ -22,11 +22,12 @@ class CarbonSegment(ElementOfSection):
         self.e_init = 0
 
     @staticmethod
-    def _get_diagram_for_the_carbon(new_steel) -> DiagramSteel | DiagramCarbon:
+    def _get_diagram_for_the_carbon(new_steel) -> None | DiagramSteel | DiagramCarbon:
         if new_steel in MaterialVariables.steel_for_concrete:
             return DiagramSteel(steel_type=new_steel)
         elif new_steel in MaterialVariables.carbon_class:
             return DiagramCarbon(carbon_class=new_steel)
+        return None
 
     @property
     def calculate_with_carbon(self) -> bool:

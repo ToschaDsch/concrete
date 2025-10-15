@@ -75,7 +75,7 @@ class ResultGraphSteel:
 
 
 class GeneralGraphicForResult:
-    def __init__(self, graphic_for_concrete: [ResultGraphConcrete], graphic_for_steel: [ResultGraphSteel],
+    def __init__(self, graphic_for_concrete: list[list[ResultGraphConcrete]], graphic_for_steel: list[ResultGraphSteel],
                  graphic_for_carbon: ResultGraphSteel):
         self.graphic_for_concrete = graphic_for_concrete
         self.graphic_for_steel = graphic_for_steel

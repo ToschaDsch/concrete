@@ -26,7 +26,10 @@ class GeneralWindow(QMainWindow):
     def __init__(self, *args):
         super(GeneralWindow, self).__init__()
 
+        self.setWindowTitle(Menus.name_of_the_program)
+
         general_layout = QVBoxLayout()
+
 
         # variables to calculate
         self._section = AllElementsOfTheSection(concrete_class=MaterialVariables.concrete_class[3])
@@ -167,12 +170,14 @@ class GeneralWindow(QMainWindow):
         # b =
         label_b = QLabel(MenuNames.b_is)
         layout_concrete.addWidget(label_b)
+        self.line_edit_b.setText(str(InitiationValues.b_add))
         self.line_edit_b.textChanged.connect(self.text_changed_b_addition_plate)
         layout_concrete.addWidget(self.line_edit_b)
 
         # h =
         label_h = QLabel(MenuNames.h_is)
         layout_concrete.addWidget(label_h)
+        self.line_edit_h.setText(str(InitiationValues.h_add))
         self.line_edit_h.textChanged.connect(self.text_changed_h_addition_plate)
         layout_concrete.addWidget(self.line_edit_h)
 
@@ -614,6 +619,7 @@ class GeneralWindow(QMainWindow):
             return False
         i = item.row()
         j = item.column()
+        text = text.replace(',', '.')
         t = float(text) if j != 5 else text
         n_section = len(self._section.list_of_steel) - 1 - i
         steel_line = self._section.list_of_steel[n_section]
@@ -690,6 +696,8 @@ class GeneralWindow(QMainWindow):
             return None
         if self._section.carbon.calculate_with_carbon:
             h += self._section.carbon.z
+        if self._section.addition_concrete:
+            h += self._section.addition_concrete.b
         b_c = variables_the_program.Menus.b_left_side
         h_c = variables_the_program.Menus.h_top
         return min(b_c / b * Menus.scale_canvas_section,
@@ -700,7 +708,8 @@ class GeneralWindow(QMainWindow):
         new_element = self._section.add_copy_of_last_element_and_return_it(type_of_section=MaterialVariables.concrete)
         self.update_the_concrete_table()
 
-    def update_the_concrete_table(self, new_list_of_concrete_sections: [AConcreteSection] = None):
+    def update_the_concrete_table(self, new_list_of_concrete_sections: list[AConcreteSection] = None):
+
         n = len(self._section.list_of_concrete_sections)
         for row_i in range(n):
             self.table_concrete.removeRow(0)
@@ -715,10 +724,13 @@ class GeneralWindow(QMainWindow):
             self.button_minus_concrete.setEnabled(True)
         else:
             self.button_minus_concrete.setEnabled(False)
+        if new_list_of_concrete_sections is None:
+            return None
         concrete = new_list_of_concrete_sections[0].concrete.name_of_class
         index = MaterialVariables.concrete_class.index(concrete)
         self.combobox_objects_concrete_general.setCurrentIndex(index)
         self.draw_date_and_results()
+        return None
 
     def minus_an_element_of_concrete(self):
         if len(self._section.list_of_concrete_sections) == 2:
@@ -744,10 +756,11 @@ class GeneralWindow(QMainWindow):
     def draw_date_and_results(self):
         self.draw_all()
 
-        if self._section.is_calculated is False:
+        if not self._section.is_calculated:
             self.slider.setEnabled(False)
             return None
         self.make_results_enabled()
+        return None
 
     def make_results_enabled(self):
         self.slider.setEnabled(True)
@@ -802,6 +815,7 @@ class GeneralWindow(QMainWindow):
         # for diagram
         self.painter_diagram.end()
         self.label_diagram_canvas.setPixmap(self.canvas_diagram)
+        return None
 
     def draw_diagram_canvas(self):
         board = variables_the_program.Menus.board_canvas_diagram
@@ -835,7 +849,7 @@ class GeneralWindow(QMainWindow):
                                                 scale_x_y=scale_x_y)
 
     def draw_list_of_diagram_on_the_canvas(self, board: int, y0: float,
-                                           name_axes: tuple[str], list_of_diagrams: [],
+                                           name_axes: tuple[str], list_of_diagrams: list,
                                            scale_x_y: tuple[float, float]):
         # draw axe
         pen = QtGui.QPen(MyColors.concrete_boards, PenThicknessToDraw.axis)
@@ -899,6 +913,7 @@ class GeneralWindow(QMainWindow):
             return None
         self.painter_diagram.drawText(QPoint(int(x_ - shift_x),
                                              int(y_ - y2 * scale_x_y[1] - shift_y)), str(round(y2, 2)))
+        return None
 
     def draw_axis_for_diagram(self, board: int, y00: float, name_axes: tuple[str]):
         # horizontal axis
@@ -939,17 +954,18 @@ class GeneralWindow(QMainWindow):
             return None
         length = Menus.normal_force_length
         h = int(Menus.normal_force_height / 2)
-        y = Menus.h_top * 0.5 * (1 + Menus.scale_canvas_section) - (self._section.eccentricity * 100 + z) * scale
+        y = int(Menus.h_top * 0.5 * (1 + Menus.scale_canvas_section) - (self._section.eccentricity * 100 + z) * scale)
 
         x0 = int(Menus.b_left_side / 2)
         if self._section.normal_force < 0:
             self.painter_section.drawLine(x0, y, x0 - length, y)
-            self.painter_section.drawLine(x0, y, x0 - length / 2, y + h)
-            self.painter_section.drawLine(x0, y, x0 - length / 2, y - h)
+            self.painter_section.drawLine(x0, y, int(x0 - length / 2), y + h)
+            self.painter_section.drawLine(x0, y, int(x0 - length / 2), y - h)
         else:
             self.painter_section.drawLine(x0, y, x0 + length, y)
-            self.painter_section.drawLine(x0, y, x0 + length / 2, y + h)
-            self.painter_section.drawLine(x0, y, x0 + length / 2, y - h)
+            self.painter_section.drawLine(x0, y, int(x0 + length / 2), y + h)
+            self.painter_section.drawLine(x0, y, int(x0 + length / 2), y - h)
+        return None
 
     def draw_label_slider(self):
         self.canvas_slider.fill(MyColors.label_slider_background)
@@ -1058,8 +1074,9 @@ class GeneralWindow(QMainWindow):
         self.table_carbon.setItem(0, 3, QTableWidgetItem(str(self._section.carbon.m_int)))
         Menus.table_insert = False
         self.draw_date_and_results()
+        return None
 
-    def update_the_steel_table(self, new_list_of_steel: [ASteelLine] = None):
+    def update_the_steel_table(self, new_list_of_steel: list[ASteelLine] = None):
         n = len(self._section.list_of_steel)
         for row_i in range(n):
             self.table_steel.removeRow(0)
@@ -1169,21 +1186,23 @@ class GeneralWindow(QMainWindow):
         else:
             z = 0
         x0_y0 = [Menus.b_left_side * 0.5, get_y0(section=self._section, scale=scale_concrete[1])]
-        x0_y0_z = x0_y0[0], x0_y0[1] - z * scale_concrete[1]
+        x0_y0_z = [x0_y0[0], x0_y0[1] - z * scale_concrete[1]]
 
         # draw concrete
         for graph_concrete in graph.graphic_for_concrete:
-            self.draw_a_graph_concrete(graph_concrete=graph_concrete, scale_concrete=scale_concrete, x0_y0=x0_y0_z)
+            self.draw_a_graph_concrete(graph_concrete=graph_concrete,
+                                       scale_concrete=scale_concrete, x0_y0=x0_y0_z)
 
         # draw steel
         for graph_steel in graph.graphic_for_steel:
-            draw_a_graph_steel(self.painter_section, graph_steel=graph_steel, scale_steel=scale_steel, x0_y0=x0_y0_z)
+            draw_a_graph_steel(self.painter_section, graph_steel=graph_steel,
+                               scale_steel=scale_steel, x0_y0=x0_y0_z)
 
         # draw carbon
         if self._section.carbon.calculate_with_carbon:
             x0_y0_z2 = x0_y0[0], x0_y0[1] + z * scale_concrete[1]
-            draw_a_graph_steel(self.painter_section, graph_steel=graph.graphic_for_carbon, scale_steel=scale_steel,
-                               x0_y0=x0_y0_z2)
+            draw_a_graph_steel(self.painter_section, graph_steel=graph.graphic_for_carbon,
+                               scale_steel=scale_steel, x0_y0=x0_y0_z2)
 
         # draw strain
         eo = result.eo
@@ -1191,7 +1210,7 @@ class GeneralWindow(QMainWindow):
         self.draw_strains_for_section_canvas(x0_y0=x0_y0_z, eo=eo, eu=eu)
         self.draw_strains_for_diagram_canvas(result=result)
 
-    def draw_strains_for_section_canvas(self, x0_y0: [float, float], eo: float, eu: float):
+    def draw_strains_for_section_canvas(self, x0_y0: list[float], eo: float, eu: float) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.DashLine)
         self.painter_section.setPen(pen)
@@ -1275,14 +1294,15 @@ class GeneralWindow(QMainWindow):
         scale_fo_steel = b_c / max_values_steel * Menus.scale_canvas_section * 0.5, y_scale
         return scale_for_concrete, scale_fo_steel
 
-    def draw_a_graph_concrete(self, graph_concrete: [ResultGraphConcrete], scale_concrete: [float], x0_y0: [float]):
+    def draw_a_graph_concrete(self, graph_concrete: list[ResultGraphConcrete], scale_concrete: list[float],
+                              x0_y0: list[float]):
         self.draw_polygon_for_concrete(graph_concrete=graph_concrete,
                                        scale_concrete=scale_concrete, x0_y0=x0_y0)
         draw_lines_above_concrete_diagram(self.painter_section, graph_concrete=graph_concrete,
                                           scale_concrete=scale_concrete, x0_y0=x0_y0)
 
-    def draw_polygon_for_concrete(self, graph_concrete: [ResultGraphConcrete],
-                                  scale_concrete: [float], x0_y0: [float]):
+    def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],
+                                  scale_concrete: list[float], x0_y0: list[float]):
         polygon = make_polygon_to_draw_concrete(graph_concrete=graph_concrete,
                                                 scale_concrete=scale_concrete, x0_y0=x0_y0)
         pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)

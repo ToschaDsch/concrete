@@ -9,17 +9,16 @@ from variables.variables_the_program import MyColors, InitiationValues
 
 class AdditionConcrete:
     def __init__(self, concrete_class: str = InitiationValues.default_concrete_class,
-                 type_of_diagram_steel: int = 0, type_of_diagram_concrete: int = 0, n: int = InitiationValues.n,
-                 normal_force: float = InitiationValues.normal_force,
-                 eccentricity: float = InitiationValues.eccentricity,
-                 dn: float = InitiationValues.d_n):
-        self._list_of_concrete_sections: [AConcreteSection | ElementOfSection] = [AConcreteSection()]
-        self._list_of_steel: [ASteelLine | ElementOfSection] = [ASteelLine()]
+                 h: float = InitiationValues.h_add, b: float = InitiationValues.b_add,):
+        self._list_of_concrete_sections: list[AConcreteSection | ElementOfSection] = [AConcreteSection()]
+        self._list_of_steel: list[ASteelLine | ElementOfSection] = [ASteelLine()]
         self._concrete_class: str = concrete_class
         self._concrete_diagram = DiagramConcrete(concrete_class=concrete_class)
         self._type_of_diagram_steel = 0
         self._calculate_with_top_plate: bool = False
         self.type_of_diagram_concrete = 0
+        self.h = h
+        self.b = b
 
     @property
     def calculate_with_top_plate(self):
@@ -49,8 +48,8 @@ class AllElementsOfTheSection:
                  normal_force: float = InitiationValues.normal_force,
                  eccentricity: float = InitiationValues.eccentricity,
                  dn: float = InitiationValues.d_n):
-        self._list_of_concrete_sections: [AConcreteSection | ElementOfSection] = [AConcreteSection()]
-        self._list_of_steel: [ASteelLine | ElementOfSection] = [ASteelLine()]
+        self._list_of_concrete_sections: list[AConcreteSection | ElementOfSection] = [AConcreteSection()]
+        self._list_of_steel: list[ASteelLine | ElementOfSection] = [ASteelLine()]
         self._concrete_class: str = concrete_class
         self._concrete_diagram = DiagramConcrete(concrete_class=concrete_class)
         self._type_of_diagram_steel = 0
@@ -178,7 +177,7 @@ class AllElementsOfTheSection:
             section.divide_the_section(dn=dn)
 
     @property
-    def concrete_important_coordinate(self) -> ([float, float], [float, float]):
+    def concrete_important_coordinate(self) -> (list[float, float], list[float, float]):
         return self._concrete_diagram.important_coordinate(typ_of_diagram=self.type_of_diagram_concrete)
 
     def add_an_element(self, new_element: ElementOfSection):
@@ -280,7 +279,7 @@ class AllElementsOfTheSection:
         return self._list_of_steel
 
     @list_of_steel.setter
-    def list_of_steel(self, new_list_of_steel: [ASteelLine]):
+    def list_of_steel(self, new_list_of_steel: list[ASteelLine]):
         self._list_of_steel = new_list_of_steel
 
     def get_b_for_y(self, y: float):
@@ -298,7 +297,7 @@ class AllElementsOfTheSection:
                          typ_of_diagram=self.type_of_diagram_concrete,
                          color=self._concrete_color_rgba)
 
-    def get_graph_for_steel(self) -> [DiagramToDraw]:
+    def get_graph_for_steel(self) -> list[DiagramToDraw]:
         list_of_graph = []
         for steel_line in self._list_of_steel:
             list_of_graph.append(get_graph(diagram=steel_line.steel,
@@ -307,7 +306,7 @@ class AllElementsOfTheSection:
                                            color=steel_line.color_QColor))
         return list_of_graph
 
-    def get_graph_for_carbon(self) -> [DiagramToDraw]:
+    def get_graph_for_carbon(self) -> DiagramToDraw:
         return get_graph(diagram=self.carbon.carbon_diagram,
                          n=AllElementsOfTheSection.n_points_for_graph,
                          typ_of_diagram=self.type_of_diagram_steel,

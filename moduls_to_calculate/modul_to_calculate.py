@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any
 
 from moduls_to_calculate.carbon_values import CarbonSegment
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
@@ -36,7 +37,7 @@ class CalculateData:
 
     def __init__(self, dn_max: float, type_of_diagram_concrete: int, type_of_diagram_steel: int,
                  concrete_diagram: DiagramConcrete, normal_force: float, e0: float,
-                 h: float, list_of_concrete_sections: [AConcreteSection], list_of_steel: [ASteelLine],
+                 h: float, list_of_concrete_sections: list[AConcreteSection], list_of_steel: list[ASteelLine],
                  calculate_with_carbon):
         self.dn_max = dn_max
         self.normal_force = normal_force
@@ -51,8 +52,8 @@ class CalculateData:
 
 
 def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: float, n_de: int,
-                     normal_force: float, e0: float, list_of_concrete_sections: [AConcreteSection],
-                     list_of_steel: [ASteelLine],
+                     normal_force: float, e0: float, list_of_concrete_sections: list[AConcreteSection],
+                     list_of_steel: list[ASteelLine],
                      concrete_diagram: DiagramConcrete,
                      type_of_diagram_concrete: int,
                      type_of_diagram_steel: int, dn_max: float,
@@ -153,7 +154,8 @@ def calculation_with_carbon(carbon: CarbonSegment, calculate_date: CalculateData
     return result
 
 
-def correct_normal_force_with_prestress(normal_force: float, e0: float, list_of_steel: [ASteelLine]) -> (float, float):
+def correct_normal_force_with_prestress(normal_force: float, e0: float, list_of_steel: list[ASteelLine]) -> tuple[
+    float, float]:
     if len(list_of_steel) == 0:
         return normal_force, e0
     moment = normal_force * e0
@@ -187,7 +189,7 @@ def find_eo_and_get_result(e_top_i: float, e_bottom_max: float,
 def make_a_list_with_preliminary_eo_eu(eo_i: float, eu_max: float,
                                        h: float, y_min: float,
                                        normal_force: float,
-                                       n_de: int) -> [[float, float]]:
+                                       n_de: int) -> list[list[float]]:
     list_eo_eu = []  # eo - e_top, e_u - e bottom
     if normal_force < 0:
         eu_min = eu_max
@@ -202,8 +204,8 @@ def make_a_list_with_preliminary_eo_eu(eo_i: float, eu_max: float,
     return list_eo_eu
 
 
-def calculate_concrete(list_of_concrete_sections: [AConcreteSection], e_top: float, e_bottom: float, h: float,
-                       type_of_diagram_concrete: int) -> (list, list, list):
+def calculate_concrete(list_of_concrete_sections: list[AConcreteSection], e_top: float, e_bottom: float, h: float,
+                       type_of_diagram_concrete: int) -> tuple[int, int, list[Any]] | None:
     normal_force = 0
     moment = 0
     graphic_concrete = []
@@ -219,8 +221,8 @@ def calculate_concrete(list_of_concrete_sections: [AConcreteSection], e_top: flo
     return normal_force, moment, graphic_concrete
 
 
-def calculate_steel(list_of_steel: [ASteelLine], e_top: float, e_bottom: float, h: float,
-                    type_of_diagram_steel: int) -> (list, list, list):
+def calculate_steel(list_of_steel: list[ASteelLine], e_top: float, e_bottom: float, h: float,
+                    type_of_diagram_steel: int) -> tuple[int, int, list[Any]] | None:
     graphic_steel = []
     normal_force_steel = 0
     moment_steel = 0
@@ -237,8 +239,8 @@ def calculate_steel(list_of_steel: [ASteelLine], e_top: float, e_bottom: float, 
 
 
 def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
-                       list_of_concrete_sections: [AConcreteSection],
-                       list_of_steel: [ASteelLine],
+                       list_of_concrete_sections: list[AConcreteSection],
+                       list_of_steel: list[ASteelLine],
                        type_of_diagram_concrete: int,
                        type_of_diagram_steel: int,
                        normal_force_0: float, e0: float,
@@ -332,7 +334,7 @@ def find_precise_result_between_two_results(result_1: Result, result_2: Result, 
                                                    recursion=recursion)
 
 
-def check_primary_results_find_precise_e_top(results: [Result], calculate_date: CalculateData
+def check_primary_results_find_precise_e_top(results: list[Result], calculate_date: CalculateData
                                              ) -> Result | None:
     if len(results) == 0:
         return None
@@ -391,7 +393,7 @@ def find_e_bottom_for_e_top_get_result(preliminary_list_eo_eu: tuple[float, floa
     return check_primary_results_find_precise_e_top(results=list_or_preliminary_results, calculate_date=calculate_date)
 
 
-def check_if_results_have_the_same_sign(results: [Result]) -> bool:
+def check_if_results_have_the_same_sign(results: list[Result]) -> bool:
     results_plus = len(list(filter(lambda x: (x.dn > 0), results)))
     results_minus = len(list(filter(lambda x: (x.dn < 0), results)))
     if len(results) == results_plus or len(results) == results_minus:  # there is no decision

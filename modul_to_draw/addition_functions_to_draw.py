@@ -29,18 +29,14 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
     for i in range(len(result_1.graph.graphic_for_steel)):
         graph_1: ResultGraphSteel = result_1.graph.graphic_for_steel[i]
         graph_2: ResultGraphSteel = result_2.graph.graphic_for_steel[i]
-        es = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.es, r2=graph_2.es)
-        yi = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.yi, r2=graph_2.yi)
-        ss = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ss, r2=graph_2.ss)
+        es, yi, ss = get_es_yi_ss(mi=mi, m1=m1, m2=m2, graph_1=graph_1, graph_2=graph_2)
         graphic_for_steel.append(ResultGraphSteel(es=es, yi=yi, ss=ss, color=graph_1.color))
 
     # carbon
     if result_1.graph.graphic_for_carbon and result_2.graph.graphic_for_carbon:
         graph_1: ResultGraphSteel = result_1.graph.graphic_for_carbon
         graph_2: ResultGraphSteel = result_2.graph.graphic_for_carbon
-        es = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.es, r2=graph_2.es)
-        yi = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.yi, r2=graph_2.yi)
-        ss = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ss, r2=graph_2.ss)
+        es, yi, ss = get_es_yi_ss(mi=mi, m1=m1, m2=m2, graph_1=graph_1, graph_2=graph_2)
         graphic_for_carbon = ResultGraphSteel(es=es, yi=yi, ss=ss, color=graph_1.color)
     else:
         graphic_for_carbon = ResultGraphSteel(es=0, yi=0, ss=0, color=MyColors.carbon_stress)
@@ -56,6 +52,11 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
     result = Result(normal_force=normal_force, moment=mi, graph=graphic, eo=eo, eu=eu, dn=dn, sc=sc)
     return result
 
+def get_es_yi_ss(mi, m1, m2, graph_1, graph_2):
+    es = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.es, r2=graph_2.es)
+    yi = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.yi, r2=graph_2.yi)
+    ss = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ss, r2=graph_2.ss)
+    return es, yi, ss
 
 def interpolate_for_graph(mi: float, m1: float, m2: float, r1: float, r2: float) -> float:
     if m2 - m1 == 0:
@@ -70,8 +71,8 @@ def get_scale_x_y_for_diagram(board: float, max_values: tuple[float, float]) -> 
     return b / max_values[0], h / max_values[1]
 
 
-def make_polygon_to_draw_concrete(graph_concrete: [ResultGraphConcrete],
-                                  scale_concrete: [float], x0_y0: [float]) -> QPolygonF:
+def make_polygon_to_draw_concrete(graph_concrete: list[ResultGraphConcrete],
+                                  scale_concrete: list[float], x0_y0: list[float]) -> QPolygonF:
     polygon = QPolygonF()
     flag = 0  # first element with s > 0
     n = len(graph_concrete) - 1
@@ -84,32 +85,33 @@ def make_polygon_to_draw_concrete(graph_concrete: [ResultGraphConcrete],
         if sc == 0:
             continue
         if flag == 0 and i != n:
-            x0 = x0_y0[0]
-            y0 = x0_y0[1] - (yi - dy / 2) * scale_concrete[1]
+            x0 = int(x0_y0[0])
+            y0 = int(x0_y0[1] - (yi - dy / 2) * scale_concrete[1])
             polygon.append(QPoint(x0, y0))
             s_ = 0.5 * (3 * sc - graph_concrete[i + 1].sc)
             if s_ < 0:
                 s_ = 0
-            polygon.append(QPoint(x0 + s_ * scale_concrete[0], y0))
+            polygon.append(QPoint(int(x0 + s_ * scale_concrete[0]), y0))
             flag = 1
-        xi = x0_y0[0] + sc * scale_concrete[0]
-        yi = x0_y0[1] - yi * scale_concrete[1]
+        xi = int(x0_y0[0] + sc * scale_concrete[0])
+        yi = int(x0_y0[1] - yi * scale_concrete[1])
         polygon.append(QPoint(xi, yi))
 
-    xn = x0_y0[0] + (graph_concrete[n].sc + dx / 2) * scale_concrete[0]
-    yn = x0_y0[1] - (graph_concrete[n].yi + dy / 2) * scale_concrete[1]
+    xn = int(x0_y0[0] + (graph_concrete[n].sc + dx / 2) * scale_concrete[0])
+    yn = int(x0_y0[1] - (graph_concrete[n].yi + dy / 2) * scale_concrete[1])
     polygon.append(QPoint(xn, yn))
-    polygon.append(QPoint(x0_y0[0], yn))
+    polygon.append(QPoint(int(x0_y0[0]), yn))
     return polygon
 
 
-def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_steel: [float], x0_y0: [float]):
+def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_steel: tuple[float],
+                       x0_y0: list[float]):
     if graph_steel is None:
         return None
     yi = graph_steel.yi
     ss = graph_steel.ss
     x0 = x0_y0[0]
-    y0 = x0_y0[1] - yi * scale_steel[1]
+    y0 = x0_y0[1] - yi * list(scale_steel)[1]
     x1 = x0_y0[0] + ss * scale_steel[0]
 
     pen = QtGui.QPen(graph_steel.color, PenThicknessToDraw.stress_steel)
@@ -120,8 +122,8 @@ def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_ste
     painter_section.drawLine(x0, y0, x1, y0)
 
 
-def draw_polygon_for_concrete(self, graph_concrete: [ResultGraphConcrete],
-                              scale_concrete: [float], x0_y0: [float]):
+def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],
+                              scale_concrete: list[float], x0_y0: list[float]):
     polygon = make_polygon_to_draw_concrete(graph_concrete=graph_concrete,
                                             scale_concrete=scale_concrete, x0_y0=x0_y0)
     pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)
@@ -131,8 +133,8 @@ def draw_polygon_for_concrete(self, graph_concrete: [ResultGraphConcrete],
     self.draw_a_polygon(polygon=polygon, brush=brush)
 
 
-def draw_lines_above_concrete_diagram(painter_section, graph_concrete: [ResultGraphConcrete],
-                                      scale_concrete: [float], x0_y0: [float]):
+def draw_lines_above_concrete_diagram(painter_section, graph_concrete: list[ResultGraphConcrete],
+                                      scale_concrete: list[float], x0_y0: list[float]):
     pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)
     painter_section.setPen(pen)
     brush = QtGui.QBrush(MyColors.concrete_diagram)

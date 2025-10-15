@@ -64,6 +64,9 @@ class InitiationValues:
     a_carbon = 5
     z_carbon = 2
     m_int_carbon = 2
+    # addition concrete
+    h_add = 20
+    b_add = 20
 
 
 @dataclass
@@ -117,8 +120,8 @@ class MenuNames:
     label_steel = "Bewehrung"
     strengthening_concrete = "Verstärkung mit Beton oben"
     strengthening_carbon = "Verstärkung mit carbon unten"
-    b_is = 'b = , m'    # for addition plate
-    h_is = 'h = , m'    # for addition plate
+    b_is = 'b = , cm'    # for addition plate
+    h_is = 'h = , cm'    # for addition plate
 
 @dataclass
 class Names:
