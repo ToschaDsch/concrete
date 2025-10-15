@@ -120,6 +120,7 @@ def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_ste
     painter_section.setBrush(brush)
 
     painter_section.drawLine(x0, y0, x1, y0)
+    return None
 
 
 def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],

@@ -185,10 +185,20 @@ class GeneralWindow(QMainWindow):
 
 
     def text_changed_b_addition_plate(self, new_text: str):
-        print(new_text)
+        try:
+            b = float(new_text)
+            self._section.addition_concrete.b = b
+        except Exception as inst:
+            print(type(inst), new_text)
+            return None
 
     def text_changed_h_addition_plate(self, new_text: str):
-        print(new_text)
+        try:
+            h = float(new_text)
+            self._section.addition_concrete.h = h
+        except Exception as inst:
+            print(type(inst), new_text)
+            return None
 
     def load_carbon_strengthening(self, extra_layout: QHBoxLayout):
         layout_carbon_strengthening = QVBoxLayout()
@@ -251,6 +261,8 @@ class GeneralWindow(QMainWindow):
         self.line_edit_b.setEnabled(check)
         self.line_edit_h.setEnabled(check)
         self.checkbox_carbon.setChecked(False)
+        b, h = self._section.get_b_h_max()
+        self._section.addition_concrete.section.y0 = h
         self.draw_all()
 
 
@@ -608,7 +620,10 @@ class GeneralWindow(QMainWindow):
                 h = t
         self._section.list_of_concrete_sections[i].new_bo_bu_y0_h(bo=bo, bu=bu, y0=y0, h=h)
         self._section.correct_new_concrete_section()
+        b, h = self._section.get_b_h_max()
+        self._section.addition_concrete.section.y0 = h
         self.draw_date_and_results()
+        return None
 
     def steel_table_changed_item(self, item) -> None | bool:
         """change a concrete section"""
@@ -696,8 +711,8 @@ class GeneralWindow(QMainWindow):
             return None
         if self._section.carbon.calculate_with_carbon:
             h += self._section.carbon.z
-        if self._section.addition_concrete:
-            h += self._section.addition_concrete.b
+        if self._section.addition_concrete.calculate_with_top_plate:
+            h += self._section.addition_concrete.h
         b_c = variables_the_program.Menus.b_left_side
         h_c = variables_the_program.Menus.h_top
         return min(b_c / b * Menus.scale_canvas_section,
@@ -795,12 +810,16 @@ class GeneralWindow(QMainWindow):
         # draw section
         if self._section.carbon.calculate_with_carbon:
             z = self._section.carbon.z
+        elif self._section.addition_concrete.calculate_with_top_plate:
+            z = - self._section.addition_concrete.h
         else:
             z = 0
         self.draw_concrete(scale=scale, z=z)
         self.draw_steel(scale=scale, z=z)
         if self._section.carbon.calculate_with_carbon:
             self.draw_carbon(scale=scale)
+        if self._section.addition_concrete.calculate_with_top_plate:
+            self.draw_addition_plate(scale=scale, z=z)
         self.draw_normal_force(scale=scale, z=z)
 
         self.draw_diagram_canvas()
@@ -884,7 +903,7 @@ class GeneralWindow(QMainWindow):
         shift_y = 5
         # important coordinates
         pen = QtGui.QPen(MyColors.addition_lines, PenThicknessToDraw.addition_lines_for_diagram)
-        pen.setStyle(QtCore.Qt.DashLine)
+        pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_diagram.setPen(pen)
         brush = QtGui.QBrush(MyColors.addition_lines)
         self.painter_diagram.setBrush(brush)
@@ -947,6 +966,14 @@ class GeneralWindow(QMainWindow):
         self.painter_section.setPen(pen)
         self.painter_section.drawLine(int(x0), int(y0), int(x0), int(y1))
 
+    def draw_addition_plate(self, scale: float, z: float):
+        # draw the addition plate
+        pen = QtGui.QPen(MyColors.concrete_addition_plate, PenThicknessToDraw.boards)
+        self.painter_section.setPen(pen)
+        brush = QtGui.QBrush(MyColors.concrete_addition)
+        section = self._section.addition_concrete.section
+        self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
+
     def draw_normal_force(self, scale: float, z):
         pen = QtGui.QPen(MyColors.normal_force, PenThicknessToDraw.boards)
         self.painter_section.setPen(pen)
@@ -978,6 +1005,7 @@ class GeneralWindow(QMainWindow):
         for m in self._section.result.keys():
             x = int(m / self._m_max * Menus.sliders_width)
             self.painter_slider.drawLine(x, 0, x, Menus.slider_label_height)
+        return None
 
     def draw_a_concrete_section(self, section: AConcreteSection, scale: float, z: float,
                                 brush: QtGui.QBrush = QtGui.QBrush(QColor(50, 50, 50))):
@@ -1159,6 +1187,7 @@ class GeneralWindow(QMainWindow):
             return None
         self.label_current_normal_force_n_i.setText(str(round(result.dn, 2)))
         self.draw_the_graph(result=result)
+        return None
 
     def make_result_for_mi(self, mi: float) -> Result | None:
         """the function interpolate new graphic for current m_i"""
@@ -1177,6 +1206,7 @@ class GeneralWindow(QMainWindow):
                 result_1 = self._section.result[m_i]
                 result_2 = self._section.result[m1_plus_1]
                 return make_intermediate_result_for_the_graphic(mi=mi, result_1=result_1, result_2=result_2)
+        return None
 
     def draw_the_graph(self, result: Result):
         graph: GeneralGraphicForResult = result.graph
@@ -1212,7 +1242,7 @@ class GeneralWindow(QMainWindow):
 
     def draw_strains_for_section_canvas(self, x0_y0: list[float], eo: float, eu: float) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
-        pen.setStyle(QtCore.Qt.DashLine)
+        pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_section.setPen(pen)
         x_max, _ = self._section.max_x_y_for_steel
         _, y_max = self._section.get_b_h_max()
@@ -1284,6 +1314,7 @@ class GeneralWindow(QMainWindow):
         x = int(x_ + ec * scale_x_y[0])
         y = int(y_ - sc * scale_x_y[1])
         self.painter_diagram.drawEllipse(x - r, y - r, 2 * r, 2 * r)
+        return None
 
     def make_scales_for_stress(self) -> tuple[tuple[float, float], tuple[float, float]]:
         _, max_values_concrete = self._section.max_x_y_for_concrete

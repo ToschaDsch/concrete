@@ -1,3 +1,5 @@
+from typing import Any
+
 from moduls_to_calculate.carbon_values import CarbonSegment
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import ElementOfSection, AConcreteSection, ASteelLine
 from moduls_to_calculate.modul_to_calculate import calculate_result
@@ -19,6 +21,7 @@ class AdditionConcrete:
         self.type_of_diagram_concrete = 0
         self.h = h
         self.b = b
+        self.section = AConcreteSection(bo=self.b, bu=self.b, h=self.h, concrete_class=self.concrete_class)
 
     @property
     def calculate_with_top_plate(self):
@@ -94,7 +97,7 @@ class AllElementsOfTheSection:
         return self._list_of_concrete_sections
 
     @list_of_concrete_sections.setter
-    def list_of_concrete_sections(self, new_list: [AConcreteSection]):
+    def list_of_concrete_sections(self, new_list: list[AConcreteSection]):
         self._list_of_concrete_sections = new_list
         self.correct_new_concrete_section()
 
@@ -127,7 +130,7 @@ class AllElementsOfTheSection:
                                         calculate_with_carbon=self.carbon.calculate_with_carbon)
         return True if len(self._result) > 0 else False
 
-    def get_es_at_the_bottom(self) -> (float, float):
+    def get_es_at_the_bottom(self) -> tuple[float, float]:
         """the function returns es max for steel line at bottom"""
         line_of_steel_0 = self._list_of_steel[0]
         y_min = line_of_steel_0.get_d_y_n_m_steel_s0()[1]
@@ -177,7 +180,8 @@ class AllElementsOfTheSection:
             section.divide_the_section(dn=dn)
 
     @property
-    def concrete_important_coordinate(self) -> (list[float, float], list[float, float]):
+    def concrete_important_coordinate(self) -> None | tuple[list[float], list[float | Any]] | tuple[
+        list[float], list[float]]:
         return self._concrete_diagram.important_coordinate(typ_of_diagram=self.type_of_diagram_concrete)
 
     def add_an_element(self, new_element: ElementOfSection):
