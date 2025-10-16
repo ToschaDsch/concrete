@@ -4,8 +4,8 @@ from typing import Any
 from moduls_to_calculate.carbon_values import CarbonSegment
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 from moduls_to_calculate.diagram import DiagramConcrete
-from variables.variables_for_material import Result, GeneralGraphicForResult, ResultGraphSteel
-from variables.variables_the_program import Menus, InitiationValues, MyColors
+from variables.variables_for_material import Result, GeneralGraphicForResult
+from variables.variables_the_program import Menus
 
 
 class NoneResult:
@@ -399,3 +399,5 @@ def check_if_results_have_the_same_sign(results: list[Result]) -> bool:
     if len(results) == results_plus or len(results) == results_minus:  # there is no decision
         return False
     return False
+
+

@@ -1,10 +1,12 @@
 import math
 import random
 from abc import ABC, abstractmethod
+from typing import Any
 
 from PySide6.QtGui import QColor
 
 from moduls_to_calculate.carbon_diagramm import DiagramCarbon
+from moduls_to_calculate.functions import get_ei_from_eo_eu_z_h
 from moduls_to_calculate.diagram import DiagramConcrete, DiagramSteel
 from variables.variables_for_material import ResultGraphConcrete, ResultGraphSteel, MaterialVariables, Result
 from variables.variables_the_program import InitiationValues
@@ -12,7 +14,7 @@ from variables.variables_the_program import InitiationValues
 
 class ElementOfSection(ABC):
     @abstractmethod
-    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> (float, float):
+    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> tuple[float, float]:
         """the function returns normal force and moment relative of bottom of the section
                         + list for graphic with yi, stress"""
         pass
@@ -36,6 +38,7 @@ class AConcreteSection(ElementOfSection):
         if dn == 0:
             return None
         self._n = round(self._h / dn)
+        return None
 
     @property
     def concrete(self):
@@ -66,6 +69,10 @@ class AConcreteSection(ElementOfSection):
     def y0(self) -> float:
         return self._y0
 
+    @y0.setter
+    def y0(self, new_value: float):
+        self._y0 = new_value
+
     @property
     def h(self) -> float:
         return self._h
@@ -76,7 +83,8 @@ class AConcreteSection(ElementOfSection):
         else:
             return self._bo
 
-    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> (float, float, list):
+    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> tuple[int, int, list[
+        Any]] | None:
         """the function returns normal force and moment relative of bottom of the section
                 + list for graphic with yi, stress
                 :returns normal force kN
@@ -122,14 +130,16 @@ class ASteelLine(ElementOfSection):
         self.e_init = 0
 
     @staticmethod
-    def _get_diagram_for_the_steel(new_steel) -> DiagramSteel | DiagramCarbon:
+    def _get_diagram_for_the_steel(new_steel) -> None | DiagramSteel | DiagramCarbon:
         if new_steel in MaterialVariables.steel_for_concrete:
             return DiagramSteel(steel_type=new_steel)
         elif new_steel in MaterialVariables.carbon_class:
             return DiagramCarbon(carbon_class=new_steel)
+        return None
 
     @property
-    def important_coordinate(self, typ_of_diagram: int = 0) -> ([float, float], [float, float]):
+    def important_coordinate(self, typ_of_diagram: int = 0) -> None | tuple[list[float | Any], list[float]] | tuple[
+        list[float | Any], list[float | Any]]:
         return self._steel.important_coordinate(typ_of_diagram=typ_of_diagram)
 
     @property
@@ -137,15 +147,14 @@ class ASteelLine(ElementOfSection):
         return self._color_str
 
     @property
-    def color_rgba(self) -> []:
+    def color_rgba(self) -> list:
         return self._color_rgba
 
     @property
     def color_QColor(self) -> QColor:
         return QColor(*self._color_rgba)
 
-    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> (
-            float, float, list):
+    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> tuple | None:
         """the function returns normal force and moment relative of bottom of the section
         + list for graphic with yi, stress
         :param h:
@@ -172,7 +181,7 @@ class ASteelLine(ElementOfSection):
         return ASteelLine(d=self._d, y=self._y + 5, n=self._n, m=self._m,
                           steel=self._steel.name_of_class, s0=self._s0)
 
-    def get_d_y_n_m_steel_s0(self) -> (float, int, str):
+    def get_d_y_n_m_steel_s0(self) -> tuple:
         return self._d, self._y, self._n, self._m, self._steel, self._s0
 
     def new_d_y_n_m_steel_s0(self, d: float, y: float, n: int, m: int, steel, s0: float, type_of_diagram=0):
@@ -224,7 +233,7 @@ def get_random_color() -> list[int]:
     return rgba
 
 
-def get_str_from_color(color_rgba: [int]) -> str:
+def get_str_from_color(color_rgba: list[int]) -> str:
     return f"rgb({color_rgba[0]}, {color_rgba[1]}, {color_rgba[2]});"
 
 

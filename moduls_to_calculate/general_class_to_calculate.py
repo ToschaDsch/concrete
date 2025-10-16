@@ -1,27 +1,62 @@
+import math
 from typing import Any
 
 from moduls_to_calculate.carbon_values import CarbonSegment
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import ElementOfSection, AConcreteSection, ASteelLine
 from moduls_to_calculate.modul_to_calculate import calculate_result
 from variables.variables_for_material import MaterialVariables
-from moduls_to_calculate.diagram import DiagramConcrete, DiagramToDraw, Diagram
+from moduls_to_calculate.diagram import DiagramConcrete, DiagramToDraw, Diagram, DiagramSteel
 from PySide6.QtGui import QColor
 from variables.variables_the_program import MyColors, InitiationValues
 
+class SteelForAdditionPlate:
+    def __init__(self):
+        self.area = math.pi*((0.8*0.5)**2)*8
+        self.steel_name = InitiationValues.default_steel_class
+        self.steel_diagram = DiagramSteel(steel_type=self.steel_name)
+        self.z = 10
+        self.color = MyColors.steel_additional_plate
 
 class AdditionConcrete:
     def __init__(self, concrete_class: str = InitiationValues.default_concrete_class,
-                 h: float = InitiationValues.h_add, b: float = InitiationValues.b_add,):
-        self._list_of_concrete_sections: list[AConcreteSection | ElementOfSection] = [AConcreteSection()]
-        self._list_of_steel: list[ASteelLine | ElementOfSection] = [ASteelLine()]
+                 h: float = InitiationValues.h_add, b: float = InitiationValues.b_add):
         self._concrete_class: str = concrete_class
         self._concrete_diagram = DiagramConcrete(concrete_class=concrete_class)
-        self._type_of_diagram_steel = 0
         self._calculate_with_top_plate: bool = False
         self.type_of_diagram_concrete = 0
-        self.h = h
-        self.b = b
+        self._h = h
+        self._b = b
         self.section = AConcreteSection(bo=self.b, bu=self.b, h=self.h, concrete_class=self.concrete_class)
+        self.steel = SteelForAdditionPlate()
+        self.m_int = 0
+
+    @property
+    def steel_name(self) -> str:
+        return self.steel.steel_name
+
+    @steel_name.setter
+    def steel_name(self, steel_name: str):
+        self.steel.steel_diagram = DiagramSteel(steel_type=steel_name)
+
+
+    @property
+    def b(self) -> float:
+        return self._b
+    @b.setter
+    def b(self, value: float):
+        self._b = value
+        bo, bu, y0, h = self.section.get_bo_bu_y0_h()
+        self.section.new_bo_bu_y0_h(bo=self._b, bu=self._b, y0=y0, h=h)
+
+    @property
+    def h(self) -> float:
+        return self._h
+
+    @h.setter
+    def h(self, value: float):
+        self._h = value
+        bo, bu, y0, h = self.section.get_bo_bu_y0_h()
+        self.section.new_bo_bu_y0_h(bo=bo, bu=bu, y0=y0, h=self._h)
 
     @property
     def calculate_with_top_plate(self):
@@ -39,8 +74,6 @@ class AdditionConcrete:
     def concrete_class(self, new_class: str):
         self._concrete_class = new_class
         self._concrete_diagram = DiagramConcrete(concrete_class=new_class)
-        for concrete_section in self._list_of_concrete_sections:
-            concrete_section.concrete = new_class
 
 
 class AllElementsOfTheSection:
@@ -239,6 +272,7 @@ class AllElementsOfTheSection:
             else:
                 self._list_of_steel.pop()
         self.is_calculated = False
+        return None
 
     def add_copy_of_last_element_and_return_it(self, type_of_section):
         if type_of_section == MaterialVariables.concrete:
@@ -274,6 +308,8 @@ class AllElementsOfTheSection:
         for section in self._list_of_concrete_sections:
             bo, bu, y0, h = section.get_bo_bu_y0_h()
             b = max(b, bo, bu)
+        if self.addition_concrete.calculate_with_top_plate:
+            b = max(b, self.addition_concrete.b)
         bo, bu, y0, h = self._list_of_concrete_sections[-1].get_bo_bu_y0_h()
         h += y0
         return b, h

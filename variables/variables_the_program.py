@@ -86,7 +86,7 @@ class MyColors:
     carbon = QColor(0, 130, 130)
     carbon_stress = QColor(0, 180, 180)
     concrete = QColor(150, 150, 150)
-    concrete_addition = QColor(150, 250, 150)
+    concrete_addition = QColor(180, 150, 150)
     concrete_diagram = QColor(150, 0, 0)
     concrete_diagram_polygon = QColor(150, 0, 0, 120)
     concrete_boards = QColor(100, 100, 100)
@@ -97,6 +97,7 @@ class MyColors:
     strains_section = QColor(200, 200, 200)
     label_slider_lines = QColor(100, 250, 0)
     label_slider_background = Qt.GlobalColor.lightGray
+    steel_additional_plate = QColor(250, 150, 150)
 
 
 @dataclass

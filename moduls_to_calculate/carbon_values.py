@@ -1,5 +1,6 @@
 from moduls_to_calculate.carbon_diagramm import DiagramCarbon
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import ElementOfSection
+from moduls_to_calculate.functions import get_ei_from_eo_eu_z_h
 from variables.variables_for_material import ResultGraphSteel, Result
 from variables.variables_the_program import InitiationValues, MyColors
 from moduls_to_calculate.diagram import DiagramSteel
@@ -74,7 +75,8 @@ class CarbonSegment(ElementOfSection):
     def carbon_diagram(self):
         return self._carbon_diagram
 
-    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> (float, float):
+    def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> tuple[
+                                                                                                  float, float, ResultGraphSteel] | None:
         """the function returns normal force and moment relative of bottom of the section
         + list for graphic with yi, stress
         :returns normal force kN
@@ -111,5 +113,3 @@ class CarbonSegment(ElementOfSection):
         self.e_init = e_init
 
 
-def get_ei_from_eo_eu_z_h(eo: float, eu: float, h: float, z: float) -> float:
-    return (eu - eo) * (h + z) / h + eo

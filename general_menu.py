@@ -129,10 +129,10 @@ class GeneralWindow(QMainWindow):
         extra_bottom_layout = QHBoxLayout()
         general_layout.addLayout(extra_bottom_layout)
         self.combobox_addition_concrete = QComboBox()
+        self.table_additional_concrete = QTableWidget()
         self.line_edit_b = QLineEdit('')
         self.line_edit_h = QLineEdit()
         self.checkbox_addition_top_plate = QCheckBox(MenuNames.strengthening_concrete)
-        self.table_addition_top_plate = QTableWidget()
         self.checkbox_carbon = QCheckBox(MenuNames.strengthening_carbon)
         self.table_carbon = QTableWidget()
         self.load_layout_extra_layout(extra_layout=extra_bottom_layout)
@@ -171,6 +171,7 @@ class GeneralWindow(QMainWindow):
         label_b = QLabel(MenuNames.b_is)
         layout_concrete.addWidget(label_b)
         self.line_edit_b.setText(str(InitiationValues.b_add))
+        self.line_edit_b.setEnabled(False)
         self.line_edit_b.textChanged.connect(self.text_changed_b_addition_plate)
         layout_concrete.addWidget(self.line_edit_b)
 
@@ -178,16 +179,83 @@ class GeneralWindow(QMainWindow):
         label_h = QLabel(MenuNames.h_is)
         layout_concrete.addWidget(label_h)
         self.line_edit_h.setText(str(InitiationValues.h_add))
+        self.line_edit_h.setEnabled(False)
         self.line_edit_h.textChanged.connect(self.text_changed_h_addition_plate)
         layout_concrete.addWidget(self.line_edit_h)
 
         layout.addLayout(layout_concrete)
+        layout_steel = QHBoxLayout()
+        layout.addLayout(layout_steel)
+        header = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
+        b = int((variables_the_program.Menus.b_center + variables_the_program.Menus.b_right_side +
+                 variables_the_program.Menus.b_left_side) / 2)
+        self.table_additional_concrete.setFixedWidth(b)
+        self.table_additional_concrete.setColumnCount(len(header))
+        self.table_additional_concrete.setHorizontalHeaderLabels(header)
+        bi = b / len(header) * 0.95
+        for i in range(len(header)):
+            self.table_additional_concrete.setColumnWidth(i, int(bi))
+        self.table_additional_concrete.itemChanged.connect(self.addition_steel_table_changed_item)
+        self.table_additional_concrete.itemSelectionChanged.connect(self.selection_changed_carbon)
+        self.table_additional_concrete.setEnabled(False)
 
+        layout_steel.addWidget(self.table_additional_concrete)
+        Menus.table_insert = True
+        steel = self._section.addition_concrete.steel
+        self.table_additional_concrete.insertRow(0)
+        # A, cm2
+        self.table_additional_concrete.setItem(0, 0, QTableWidgetItem(str(steel.area)))
+        # typ, cm2
+        combobox_steel = QComboBox()
+        steel_name = self._section.addition_concrete.steel.steel_name
+        for steel_name_i in MaterialVariables.steel_for_concrete:
+            combobox_steel.addItem(steel_name_i)
+        index = MaterialVariables.steel_for_concrete.index(steel_name)
+        combobox_steel.setCurrentIndex(index)
+        row_number_in_list = 0
+        combobox_steel.currentIndexChanged.connect(self.change_index_of_combobox_addition_steel)
+        self.table_additional_concrete.setCellWidget(0, 1, combobox_steel)
+        # z, cm
+        self.table_additional_concrete.setItem(0, 2, QTableWidgetItem(str(steel.z)))
+        # m_int, kNm
+        self.table_additional_concrete.setItem(0, 3, QTableWidgetItem(str(self._section.addition_concrete.m_int)))
+        Menus.table_insert = False
+
+    def addition_steel_table_changed_item(self, item):
+        """change the addition steel"""
+        if Menus.table_insert:
+            return None
+        text = item.text()
+        if text == '' or text == '.' or text == '-.':
+            return False
+        j = item.column()
+        t = float(text)
+        try:
+            match j:
+                case 0: # area
+                    self._section.addition_concrete.steel.area = float(t)
+                case 2: #z
+                    self._section.addition_concrete.steel.z = float(t)
+                case 3:
+                    self._section.addition_concrete.m_int = float(t)
+        except Exception as inst:
+            print(type(inst))
+            return None
+        self.draw_date_and_results()
+        return None
+
+    def change_index_of_combobox_addition_steel(self, new_index):
+        new_steel_name = MaterialVariables.steel_for_concrete[new_index]
+        self._section.addition_concrete.steel_name = new_steel_name
+        self._section.is_calculated = False
+        self.draw_date_and_results()
 
     def text_changed_b_addition_plate(self, new_text: str):
         try:
             b = float(new_text)
             self._section.addition_concrete.b = b
+            print(b)
+            self.draw_all()
         except Exception as inst:
             print(type(inst), new_text)
             return None
@@ -196,6 +264,8 @@ class GeneralWindow(QMainWindow):
         try:
             h = float(new_text)
             self._section.addition_concrete.h = h
+            print(h)
+            self.draw_all()
         except Exception as inst:
             print(type(inst), new_text)
             return None
@@ -256,7 +326,7 @@ class GeneralWindow(QMainWindow):
     def calculate_with_top_plate(self, check: bool):
         self._section.addition_concrete.calculate_with_top_plate = bool(check)
 
-        self.table_addition_top_plate.setEnabled(check)
+        self.table_additional_concrete.setEnabled(check)
         self.combobox_addition_concrete.setEnabled(check)
         self.line_edit_b.setEnabled(check)
         self.line_edit_h.setEnabled(check)
@@ -290,6 +360,7 @@ class GeneralWindow(QMainWindow):
             print(type(inst))
             return None
         self.draw_date_and_results()
+        return None
 
     def load_layout_center_horizontal(self, layout: QVBoxLayout):
         self.slider.setEnabled(False)
@@ -721,7 +792,10 @@ class GeneralWindow(QMainWindow):
     def plus_an_element_of_concrete(self):
         self.button_minus_concrete.setEnabled(True)
         new_element = self._section.add_copy_of_last_element_and_return_it(type_of_section=MaterialVariables.concrete)
+        b, h = self._section.get_b_h_max()
+        self._section.addition_concrete.section.y0 = h
         self.update_the_concrete_table()
+
 
     def update_the_concrete_table(self, new_list_of_concrete_sections: list[AConcreteSection] = None):
 
@@ -753,6 +827,8 @@ class GeneralWindow(QMainWindow):
         self._section.remove_last_element(type_of_section=MaterialVariables.concrete)
         row = 0
         self.table_concrete.removeRow(row)
+        b, h = self._section.get_b_h_max()
+        self._section.addition_concrete.section.y0 = h
         self.draw_date_and_results()
 
     def add_an_element_in_the_concrete_table(self, row_number: int, new_element: AConcreteSection):
@@ -811,13 +887,14 @@ class GeneralWindow(QMainWindow):
         if self._section.carbon.calculate_with_carbon:
             z = self._section.carbon.z
         elif self._section.addition_concrete.calculate_with_top_plate:
-            z = - self._section.addition_concrete.h
+            z = -0.5*self._section.addition_concrete.h
         else:
             z = 0
         self.draw_concrete(scale=scale, z=z)
         self.draw_steel(scale=scale, z=z)
         if self._section.carbon.calculate_with_carbon:
-            self.draw_carbon(scale=scale)
+            y = get_y0(section=self._section, scale=scale)
+            self.draw_carbon_or_a_line_of_steel(y = y, scale=scale, area=self._section.carbon.area)
         if self._section.addition_concrete.calculate_with_top_plate:
             self.draw_addition_plate(scale=scale, z=z)
         self.draw_normal_force(scale=scale, z=z)
@@ -967,12 +1044,18 @@ class GeneralWindow(QMainWindow):
         self.painter_section.drawLine(int(x0), int(y0), int(x0), int(y1))
 
     def draw_addition_plate(self, scale: float, z: float):
-        # draw the addition plate
+        """draw the addition plate """
+
+        # draw the concrete
         pen = QtGui.QPen(MyColors.concrete_addition_plate, PenThicknessToDraw.boards)
         self.painter_section.setPen(pen)
         brush = QtGui.QBrush(MyColors.concrete_addition)
         section = self._section.addition_concrete.section
         self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
+        # draw the steel
+        steel = self._section.addition_concrete.steel
+        y = self._section.addition_concrete.section.y0 + steel.z*scale
+        self.draw_carbon_or_a_line_of_steel(y=y, area=steel.area, color=steel.color, scale=scale)
 
     def draw_normal_force(self, scale: float, z):
         pen = QtGui.QPen(MyColors.normal_force, PenThicknessToDraw.boards)
@@ -1039,18 +1122,17 @@ class GeneralWindow(QMainWindow):
             self.painter_section.drawEllipse(x, y, d, d)
             x += t
 
-    def draw_carbon(self, scale: float):
-        color = MyColors.carbon
+    def draw_carbon_or_a_line_of_steel(self, y: float, area: float,
+                                       scale: float, color: QColor = MyColors.carbon):
         brush = QtGui.QBrush(color)
         self.painter_section.setBrush(brush)
-        area = self._section.carbon.area
         b = self._section.get_b_bottom() * 0.8
         if b == 0:
             b = 0.1
         a = area / b
-        y = get_y0(section=self._section, scale=scale) - a / 2 * scale
+        y -= a / 2 * scale
         x = Menus.b_left_side * 0.5 - b / 2 * scale
-        self.painter_section.drawRect(x, y, b * scale, a * scale)
+        self.painter_section.drawRect(x, int(y), b * scale, a * scale)
 
     def draw_steel(self, scale: float, z: float):
         pen = QtGui.QPen(MyColors.concrete_boards, PenThicknessToDraw.steel_section)
