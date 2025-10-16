@@ -131,7 +131,7 @@ class GeneralWindow(QMainWindow):
         self.combobox_addition_concrete = QComboBox()
         self.table_additional_concrete = QTableWidget()
         self.line_edit_b = QLineEdit('')
-        self.line_edit_h = QLineEdit()
+        self.line_edit_h = QLineEdit('')
         self.checkbox_addition_top_plate = QCheckBox(MenuNames.strengthening_concrete)
         self.checkbox_carbon = QCheckBox(MenuNames.strengthening_carbon)
         self.table_carbon = QTableWidget()
@@ -421,6 +421,9 @@ class GeneralWindow(QMainWindow):
         self.send_other_variables_by_file_open(other_variables=new_date['other_variables'])
         if new_date['carbon']:
             self.update_carbon(new_date['carbon'])
+        if 'additional_plate' in new_date:
+            self.update_additional_plate(new_date['additional_plate'])
+        return None
 
     def send_other_variables_by_file_open(self, other_variables: dict):
         # sent diagram
@@ -606,7 +609,7 @@ class GeneralWindow(QMainWindow):
         layout.addWidget(self.nonlinear_steel)
 
     def change_a_diagram(self, button: QRadioButton, _: bool):
-        if button.isChecked() is False:
+        if not button.isChecked():
             return None
         match button.text():
             case TypeOfDiagram.concrete_linear:
@@ -618,6 +621,7 @@ class GeneralWindow(QMainWindow):
             case TypeOfDiagram.steel_nonlinear:
                 self._section.type_of_diagram_steel = 1
         self.draw_date_and_results()
+        return None
 
     def load_layout_concrete(self, layout: QVBoxLayout):
         header = ('bu, cm.', 'bo, cm.', 't, cm')
@@ -1149,11 +1153,65 @@ class GeneralWindow(QMainWindow):
         self._section.add_copy_of_last_element_and_return_it(type_of_section=MaterialVariables.steel)
         self.update_the_steel_table()
 
+    def update_additional_plate(self, new_list_of_add_plate: dict):
+
+        calculate_with_add_plate: bool = new_list_of_add_plate['to_calculate'] if 'to_calculate' in new_list_of_add_plate else False
+        self.checkbox_addition_top_plate.setChecked(calculate_with_add_plate)
+        concrete_section = new_list_of_add_plate['concrete']
+        concrete_class = concrete_section['concrete_class']
+        index = MaterialVariables.concrete_class.index(concrete_class)
+        self.combobox_addition_concrete.setCurrentIndex(index)
+        b = concrete_section['b']
+        h = concrete_section['h']
+        self.line_edit_b.setText(str(b))
+        self.line_edit_h.setText(str(h))
+
+        Menus.table_insert = True
+        self.table_additional_concrete.setRowCount(0)
+        self.table_additional_concrete.insertRow(0)
+        if "steel" in new_list_of_add_plate:
+            steel_dict = new_list_of_add_plate['steel']
+        else:
+            return None
+        try:
+            area = float(steel_dict['area'])
+            self._section.addition_concrete.steel.area = area
+            z = float(steel_dict['z'])
+            self._section.addition_concrete.steel.z = z
+            m_int = float(new_list_of_add_plate['m_int'])
+            self._section.addition_concrete.m_int = m_int
+            steel_name = steel_dict['steel_class']
+            self._section.addition_concrete.steel_name =steel_name
+        except Exception as inst:
+            print(type(inst))
+            return None
+        # A, cm2
+        self.table_additional_concrete.setItem(0, 0, QTableWidgetItem(str(self._section.addition_concrete.steel.area)))
+        # typ, cm2
+        combobox_add_steel = QComboBox()
+        steel_name = self._section.addition_concrete.steel_name
+        for steel_name_i in MaterialVariables.steel_for_concrete:
+            combobox_add_steel.addItem(steel_name_i)
+        index = MaterialVariables.steel_for_concrete.index(steel_name)
+        combobox_add_steel.setCurrentIndex(index)
+        combobox_add_steel.currentIndexChanged.connect(self.change_index_of_combobox_addition_steel)
+        self.table_additional_concrete.setCellWidget(0, 1, combobox_add_steel)
+        # z, cm
+        self.table_additional_concrete.setItem(0, 2, QTableWidgetItem(str(self._section.addition_concrete.steel.z)))
+        # m_int, kNm
+        self.table_additional_concrete.setItem(0, 3, QTableWidgetItem(str(self._section.addition_concrete.m_int)))
+        Menus.table_insert = False
+        self.draw_date_and_results()
+
+        return None
+
+
     def update_carbon(self, new_list_of_carbone: dict):
         calculate_with_carbon = new_list_of_carbone['calculate_with_carbon']
         self.checkbox_carbon.setChecked(calculate_with_carbon)
 
         Menus.table_insert = True
+        self.table_carbon.setRowCount(0)
         self.table_carbon.insertRow(0)
         try:
             area = float(new_list_of_carbone['area'])

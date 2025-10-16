@@ -31,10 +31,12 @@ def data_to_dict(section: AllElementsOfTheSection) -> dict:
     concrete = concrete_to_list(section=section)
     steel = steel_to_list(section=section)
     carbon = carbon_to_list(section=section)
+    additional_plate = additional_plate_to_dict(section=section)
     other_variables = other_variables_to_dict(section=section)
     return {'concrete': concrete,
             'carbon': carbon,
             'steel': steel,
+            'additional_plate': additional_plate,
             'other_variables': other_variables}
 
 
@@ -45,6 +47,18 @@ def concrete_to_list(section: AllElementsOfTheSection) -> list:
 
     return list_of_all_sections
 
+def additional_plate_to_dict(section: AllElementsOfTheSection) -> dict:
+    additional_section = section.addition_concrete
+    additional_concrete ={"concrete_class":additional_section.concrete_class,
+                          "b":additional_section.b,
+                          "h":additional_section.h}
+    additional_steel = {"steel_class":additional_section.steel_name,
+                        "area":additional_section.steel.area,
+                        "z":additional_section.steel.z,}
+    return {"concrete":additional_concrete,
+            "steel":additional_steel,
+            "m_int":additional_section.m_int,
+            "to_calculate":additional_section.calculate_with_top_plate}
 
 def a_concrete_section_to_dict(section: AConcreteSection) -> dict:
     bo, bu, y0, h = section.get_bo_bu_y0_h()

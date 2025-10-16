@@ -13,24 +13,29 @@ def open_file(self) -> dict | bool:
     json_data = json.loads(data)
     print(json_data)
     try:
-        list_of_concrete_sections: [] = transform_from_json_to_concrete(json_data['concrete'])
-        list_of_steel: [] = transform_from_json_to_steel(json_data['steel'])
+        list_of_concrete_sections: list = transform_from_json_to_concrete(json_data['concrete'])
+        list_of_steel: list = transform_from_json_to_steel(json_data['steel'])
         dict_of_other_variables: dict = json_data['other_variables']
         if 'carbon' in json_data:
             carbon: dict = json_data['carbon']
         else:
             carbon = {}
+        if 'additional_plate' in json_data:
+            additional_plate: dict = json_data['additional_plate']
+        else:
+            additional_plate = {}
     except TypeError:
         print('error by file opening')
         return False
     return {'list_of_concrete_sections': list_of_concrete_sections,
             'list_of_steel': list_of_steel,
+            'carbon': carbon,
+            "additional_plate": additional_plate,
             'other_variables': dict_of_other_variables,
-            'carbon': carbon
             }
 
 
-def transform_from_json_to_concrete(json_data) -> [AConcreteSection]:
+def transform_from_json_to_concrete(json_data) -> list[AConcreteSection]:
     new_list_of_concrete = []
     for data_i in json_data:
         bo = float(data_i['bo'])
@@ -43,7 +48,7 @@ def transform_from_json_to_concrete(json_data) -> [AConcreteSection]:
     return new_list_of_concrete
 
 
-def transform_from_json_to_steel(json_data) -> [ASteelLine]:
+def transform_from_json_to_steel(json_data) -> list[ASteelLine]:
     new_list_of_steel = []
     for data_i in json_data:
         d = float(data_i['d'])
