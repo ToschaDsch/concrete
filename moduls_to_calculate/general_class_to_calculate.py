@@ -11,11 +11,52 @@ from variables.variables_the_program import MyColors, InitiationValues
 
 class SteelForAdditionPlate:
     def __init__(self):
-        self.area = math.pi*((0.8*0.5)**2)*8
+        self._area = math.pi*((0.8*0.5)**2)*8
         self.steel_name = InitiationValues.default_steel_class
         self.steel_diagram = DiagramSteel(steel_type=self.steel_name)
-        self.z = 10
+        self._z = 10
         self.color = MyColors.steel_additional_plate
+        d, m, n, y = self.get_d_m_n_from_area(area=self._area)
+        self.steel_line =ASteelLine(d=d, m=m, n=n, steel=self.steel_name, y=y)
+        self._h = 40 # to top of the section + additional plate #TODO
+
+    @property
+    def h(self):
+        return self._h
+
+    @h.setter
+    def h(self, value):
+        self._h = value
+        y = self._h - self._z
+        self.steel_line.y = y
+
+    @property
+    def z(self):
+        return self._z
+
+    @z.setter
+    def z(self, value):
+        self._z = value
+        y = self._h - self._z
+        self.steel_line.y = y
+
+    @staticmethod
+    def get_d_m_n_from_area(area: float) -> tuple:
+        m = 1
+        n = 1
+        d = 20*((area / (m*n*math.pi)) ** 0.5)
+        return d, m, n
+
+    @property
+    def area(self) -> float:
+        return self._area
+
+    @area.setter
+    def area(self, area: float):
+        self._area = area
+        d, m, n = self.get_d_m_n_from_area(area=area)
+        self.steel_line.d = d
+
 
 class AdditionConcrete:
     def __init__(self, concrete_class: str = InitiationValues.default_concrete_class,
@@ -42,6 +83,7 @@ class AdditionConcrete:
     @property
     def b(self) -> float:
         return self._b
+
     @b.setter
     def b(self, value: float):
         self._b = value
@@ -57,6 +99,7 @@ class AdditionConcrete:
         self._h = value
         bo, bu, y0, h = self.section.get_bo_bu_y0_h()
         self.section.new_bo_bu_y0_h(bo=bo, bu=bu, y0=y0, h=self._h)
+        self.steel.h = value + y0
 
     @property
     def calculate_with_top_plate(self):
@@ -160,7 +203,8 @@ class AllElementsOfTheSection:
                                         type_of_diagram_concrete=self.type_of_diagram_concrete,
                                         type_of_diagram_steel=self.type_of_diagram_steel,
                                         dn_max=self._dn, carbon=self.carbon, m_init=self.carbon.m_int,
-                                        calculate_with_carbon=self.carbon.calculate_with_carbon)
+                                        calculate_with_carbon=self.carbon.calculate_with_carbon,
+                                        additional_plate=self.addition_concrete)
         return True if len(self._result) > 0 else False
 
     def get_es_at_the_bottom(self) -> tuple[float, float]:

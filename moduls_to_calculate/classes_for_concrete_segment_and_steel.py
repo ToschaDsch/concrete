@@ -33,6 +33,8 @@ class AConcreteSection(ElementOfSection):
         self._h = h
         self._concrete = DiagramConcrete(concrete_class=concrete_class)
         self._n = InitiationValues.n
+        self.e_init_top = 0
+        self.e_init_bottom = 0
 
     def divide_the_section(self, dn: float):
         if dn == 0:
@@ -98,6 +100,8 @@ class AConcreteSection(ElementOfSection):
             bi = (self._bo - self._bu) / self._h * yi + self._bu
             area_i = bi * dn * 100  # mm2
             yi += self._y0  # cm
+            e_top -= self.e_init_top
+            e_bottom += self.e_init_bottom
             ec = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, h=h, yi=yi)
             sc = self._concrete.get_stress(ec=ec,
                                            typ_of_diagram=type_of_diagram)  # N/mm2
@@ -110,6 +114,18 @@ class AConcreteSection(ElementOfSection):
 
     def get_copy_of_me(self):
         return AConcreteSection(bo=self._bo, bu=self._bu, y0=self._y0, h=self._h)
+
+    def calculate_e_init(self, result__1: Result, result_1: Result, m_init: float, h: float):
+        """
+        :param h:
+        :param m_init:
+        :param result_1:    result i +1
+        :param result__1:  result i -1
+        """
+        m__1 = result__1.moment
+        m_1 = result_1.moment
+        self.e_init_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
+        self.e_init_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
 
 
 class ASteelLine(ElementOfSection):
@@ -163,7 +179,7 @@ class ASteelLine(ElementOfSection):
         :param type_of_diagram:
         returns normal force kN
                     moment  kNm"""
-        es = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, yi=self._y, h=h) - self._e0  # e0 - prestress
+        es = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, yi=self._y, h=h) - self._e0 -  self.e_init  # e0 - prestress
         ss = self._steel.get_stress(ec=es, typ_of_diagram=type_of_diagram)
         if ss is None:
             print('steel stress is None', 'e_top = ', e_top, 'e_bottom = ', e_bottom)
@@ -218,8 +234,8 @@ class ASteelLine(ElementOfSection):
         """
         m__1 = result__1.moment
         m_1 = result_1.moment
-        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._z)
-        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._z)
+        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._y)
+        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._y)
         e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
         self.e_init = e_init
 

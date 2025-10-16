@@ -66,6 +66,7 @@ class DiagramConcrete(Diagram):
                     return self._fcm * (self._k * n - n ** 2) / (1 + (self._k - 2) * n)
                 else:
                     return None
+        return None
 
     def get_max_x_y(self, typ_of_diagram: int = 0) -> tuple[float, float] | None:
         match typ_of_diagram:
@@ -73,6 +74,7 @@ class DiagramConcrete(Diagram):
                 return self._ecu2, self._fcd
             case 1:
                 return self._ecu1, self._fcm
+        return None
 
     def important_coordinate(self, typ_of_diagram: int = 0) -> None | tuple[list[float], list[float | Any]] | tuple[
         list[float], list[float]]:
@@ -83,6 +85,7 @@ class DiagramConcrete(Diagram):
                 n = 1
                 s_end = self._fcm * (self._k * n - n ** 2) / (1 + (self._k - 2) * n)
                 return [self._ec1, self._fcm], [self._ecu1, s_end]
+        return None
 
 
 class DiagramSteel(Diagram):

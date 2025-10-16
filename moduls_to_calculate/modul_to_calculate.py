@@ -38,7 +38,7 @@ class CalculateData:
     def __init__(self, dn_max: float, type_of_diagram_concrete: int, type_of_diagram_steel: int,
                  concrete_diagram: DiagramConcrete, normal_force: float, e0: float,
                  h: float, list_of_concrete_sections: list[AConcreteSection], list_of_steel: list[ASteelLine],
-                 calculate_with_carbon):
+                 calculate_with_carbon, calculate_with_additional_plate: bool, addition_plate):
         self.dn_max = dn_max
         self.normal_force = normal_force
         self.type_of_diagram_concrete = type_of_diagram_concrete
@@ -49,6 +49,8 @@ class CalculateData:
         self.list_of_steel = list_of_steel
         self.e0 = e0
         self.calculate_with_carbon: CalculateWithCarbon = calculate_with_carbon
+        self.calculate_with_additional_plate: bool = calculate_with_additional_plate
+        self.additional_plate = addition_plate
 
 
 def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: float, n_de: int,
@@ -58,12 +60,14 @@ def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: flo
                      type_of_diagram_concrete: int,
                      type_of_diagram_steel: int, dn_max: float,
                      calculate_with_carbon=False,
-                     m_init=0, carbon: CarbonSegment = None) -> defaultdict:
+                     m_init=0, carbon: CarbonSegment = None,
+                     additional_plate = None) -> defaultdict:
     """
     the function makes iterations for deformations at the top of the section
     it finds deformations at the bottom for each iteration.
     and it  calculates moment and normal forces for these deformations
 
+    :param additional_plate: a late at the section, it works after m > m_int
     :param carbon: segment of the carbon
     :param m_init: the section works by the moment with the carbon
     :param calculate_with_carbon: bool
@@ -94,15 +98,20 @@ def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: flo
                                    type_of_diagram_steel=type_of_diagram_steel, concrete_diagram=concrete_diagram,
                                    normal_force=normal_force, e0=e0, h=h,
                                    list_of_concrete_sections=list_of_concrete_sections, list_of_steel=list_of_steel,
-                                   calculate_with_carbon=calculate_with_carbon)
+                                   calculate_with_carbon=calculate_with_carbon,
+                                   calculate_with_additional_plate=additional_plate.calculate_with_top_plate,
+                                   addition_plate=additional_plate)
     n_de = int(n_de)
     if carbon.calculate_with_carbon and m_init > 0:
-        result = calculation_with_carbon(carbon=carbon, calculate_date=calculate_date, m_init=m_init, n_de=n_de,
+        return calculation_with_carbon(carbon=carbon, calculate_date=calculate_date, m_init=m_init, n_de=n_de,
                                          e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
+    elif additional_plate.calculate_with_top_plate and additional_plate.m_int > 0:
+        return calculation_with_addiction_plate(additional_plate=additional_plate, calculate_date=calculate_date,
+                                                m_init=additional_plate.m_int, n_de=n_de,
+                                                e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
     else:
-        result = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+        return normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                     calculate_date=calculate_date, e_top_max=e_top_max)
-    return result
 
 
 def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: float, y_min: float,
@@ -115,6 +124,41 @@ def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: floa
         if result_i is None:
             continue
         result[result_i.moment] = result_i
+    return result
+
+def calculation_with_addiction_plate(additional_plate, calculate_date: CalculateData,
+                                     m_init: float, n_de: int,
+                            e_bottom_max: float, h: float, y_min: float, e_top_max: float, ) -> defaultdict:
+    """the function calculate the result with a plate at the top of the section
+    after m > m_inf"""
+    # calculation without carbon for e_init
+    additional_plate.calculate_with_top_plate = False
+    result_0 = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+                                  calculate_date=calculate_date, e_top_max=e_top_max)
+    if list(result_0.keys())[-1] < m_init:
+        return result_0
+    result = defaultdict()
+    result__1 = None
+    result_1 = None
+    for m_i, result_i in result_0.items():
+        if m_i <= m_init:
+            result[m_i] = result_i
+            result__1 = result_i
+        else:
+            result_1 = result_i
+            break
+    additional_plate.steel.steel_line.calculate_e_init(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
+    additional_plate.section.calculate_e_init(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
+
+    # calculation with the plate
+    additional_plate.calculate_with_top_plate = True
+    result_add_plate = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+                                       calculate_date=calculate_date, e_top_max=e_top_max)
+    for m_i, result_i in result_add_plate.items():
+        if m_i <= m_init:
+            continue
+        else:
+            result[m_i] = result_i
     return result
 
 
@@ -246,7 +290,9 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                        normal_force_0: float, e0: float,
                        concrete_diagram: DiagramConcrete,
                        calculate_with_carbon: bool = False,
-                       carbon: CarbonSegment = None) -> Result | NoneResult:
+                       carbon: CarbonSegment = None,
+                       calculate_with_additional_plate: bool = False,
+                       additional_plate=None) -> Result | NoneResult:
     # concrete
     result_concrete = calculate_concrete(
         list_of_concrete_sections=list_of_concrete_sections,
@@ -271,23 +317,45 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
         normal_force_carbon, moment_carbon, graphic_carbon = result_carbon
     else:
         normal_force_carbon, moment_carbon, graphic_carbon = 0, 0, carbon.get_null_graphic()
-    moment = normal_force_0 * e0 + moment_steel + moment_concrete + moment_carbon  # moment from the external normal
+    if calculate_with_additional_plate:
+        # concrete
+        result_concrete = calculate_concrete(
+            list_of_concrete_sections=[additional_plate.section],
+            e_top=e_top, e_bottom=e_bottom, h=h,
+            type_of_diagram_concrete=additional_plate.type_of_diagram_concrete)
+        if result_concrete is None:
+            return NoneResult(cause='additional top plate, concrete')
+        normal_force_concrete_2, moment_concrete_2, graphic_concrete_2 = result_concrete
+        # steel
+        result_steel = calculate_steel(
+            list_of_steel=[additional_plate.steel.steel_line],
+            e_top=e_top, e_bottom=e_bottom, h=h,
+            type_of_diagram_steel=additional_plate.steel.steel_diagram)
+        if result_steel is None:
+            return NoneResult(cause='additional top plate, steel')
+        normal_force_steel_2, moment_steel_2, graphic_steel_2 = result_steel
+    else:
+        normal_force_concrete_2, moment_concrete_2,normal_force_steel_2, moment_steel_2,  = 0, 0, 0,0
+        graphic_concrete_2, graphic_steel_2 = [], []
+    moment = normal_force_0 * e0 + moment_steel + moment_concrete + moment_carbon + moment_steel_2 + moment_concrete_2 # moment from the external normal
     # force kNm
-    normal_force = normal_force_concrete + normal_force_steel + normal_force_carbon
+    normal_force = normal_force_concrete + normal_force_steel + normal_force_carbon +normal_force_steel_2 +normal_force_concrete_2
     dn = normal_force_concrete + normal_force_steel + normal_force_0 + normal_force_carbon  # external normal force
     # strain is positive kN
     sc = concrete_diagram.get_stress(ec=e_top,
                                      typ_of_diagram=type_of_diagram_concrete)
 
-    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete,
-                                      graphic_for_steel=graphic_steel,
+    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete + graphic_concrete_2,
+                                      graphic_for_steel=graphic_steel + graphic_steel_2,
                                       graphic_for_carbon=graphic_carbon)
     result = Result(normal_force=normal_force, moment=moment, graph=graphic, eu=e_bottom, eo=e_top, dn=dn, sc=sc)
     return result
 
 
 def find_precise_result_between_two_results(result_1: Result, result_2: Result, calculate_date: CalculateData,
-                                            recursion: int = 0) -> Result | None:
+                                            recursion: int = 0,
+                                            additional_plate = None,
+                                            calculate_with_additional_plate:bool = False) -> Result | None:
     """teh function checks two results and find new results between these with minimum dn"""
 
     if abs(result_1.dn) < calculate_date.dn_max:
@@ -312,7 +380,9 @@ def find_precise_result_between_two_results(result_1: Result, result_2: Result, 
                                 type_of_diagram_concrete=calculate_date.type_of_diagram_concrete,
                                 concrete_diagram=calculate_date.concrete_diagram,
                                 carbon=calculate_date.calculate_with_carbon.carbon,
-                                calculate_with_carbon=calculate_date.calculate_with_carbon.calculate_with_carbon)
+                                calculate_with_carbon=calculate_date.calculate_with_carbon.calculate_with_carbon,
+                                calculate_with_additional_plate=calculate_with_additional_plate,
+                                additional_plate=additional_plate)
     if isinstance(result, NoneResult) or recursion == Menus.max_recursion:
         if recursion == Menus.max_recursion:
             result = "recursion"
@@ -368,7 +438,7 @@ def check_primary_results_find_precise_e_top(results: list[Result], calculate_da
                                                    calculate_date=calculate_date)
 
 
-def find_e_bottom_for_e_top_get_result(preliminary_list_eo_eu: tuple[float, float],
+def find_e_bottom_for_e_top_get_result(preliminary_list_eo_eu: list[list[float]],
                                        calculate_date: CalculateData) -> Result:
     list_or_preliminary_results = []
     n = 0
@@ -382,8 +452,9 @@ def find_e_bottom_for_e_top_get_result(preliminary_list_eo_eu: tuple[float, floa
                                       type_of_diagram_concrete=calculate_date.type_of_diagram_concrete,
                                       type_of_diagram_steel=calculate_date.type_of_diagram_steel,
                                       carbon=calculate_date.calculate_with_carbon.carbon,
-                                      calculate_with_carbon=calculate_date.calculate_with_carbon.calculate_with_carbon
-                                      )
+                                      calculate_with_carbon=calculate_date.calculate_with_carbon.calculate_with_carbon,
+                                      calculate_with_additional_plate=calculate_date.calculate_with_additional_plate,
+                                        additional_plate=calculate_date.additional_plate)
         n += 1
         if isinstance(result_i, NoneResult):
             #print('primary', result_i, n)

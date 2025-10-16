@@ -1030,7 +1030,7 @@ class GeneralWindow(QMainWindow):
         x1 = x0
         y1 = int(y00 - Menus.h_top / 2 + board)
         self.painter_diagram.drawLine(x0, y0, x1, y1)
-        self.painter_diagram.drawText(QPoint(int(x0 - board * 0.8), int(y1 - board * 0.1)), name_axes[1])
+        self.painter_diagram.drawText(QPoint(int(x0 - board * 0.8), int(y1 - board * 0.1)), list(name_axes)[1])
 
     def draw_concrete(self, scale: float, z: float):
         # draw all _concrete sections
@@ -1353,6 +1353,8 @@ class GeneralWindow(QMainWindow):
         scale_concrete, scale_steel = self.make_scales_for_stress()
         if self._section.carbon.calculate_with_carbon:
             z = self._section.carbon.z
+        elif self._section.addition_concrete.calculate_with_top_plate:
+            z = -0.5*self._section.addition_concrete.h
         else:
             z = 0
         x0_y0 = [Menus.b_left_side * 0.5, get_y0(section=self._section, scale=scale_concrete[1])]
@@ -1456,7 +1458,7 @@ class GeneralWindow(QMainWindow):
         self.painter_diagram.drawEllipse(x - r, y - r, 2 * r, 2 * r)
         return None
 
-    def make_scales_for_stress(self) -> tuple[tuple[float, float], tuple[float, float]]:
+    def make_scales_for_stress(self) -> tuple[tuple[float, float | None], tuple[float, float | None]]:
         _, max_values_concrete = self._section.max_x_y_for_concrete
         _, max_values_steel = self._section.max_x_y_for_steel
         y_scale = self.make_scale_for_section()
@@ -1465,7 +1467,7 @@ class GeneralWindow(QMainWindow):
         scale_fo_steel = b_c / max_values_steel * Menus.scale_canvas_section * 0.5, y_scale
         return scale_for_concrete, scale_fo_steel
 
-    def draw_a_graph_concrete(self, graph_concrete: list[ResultGraphConcrete], scale_concrete: list[float],
+    def draw_a_graph_concrete(self, graph_concrete: list[ResultGraphConcrete], scale_concrete: tuple[float],
                               x0_y0: list[float]):
         self.draw_polygon_for_concrete(graph_concrete=graph_concrete,
                                        scale_concrete=scale_concrete, x0_y0=x0_y0)
