@@ -2,9 +2,10 @@ from collections import defaultdict
 from typing import Any
 
 from moduls_to_calculate.carbon_values import CarbonSegment
+from moduls_to_calculate.classes_for_additional_plate import AdditionConcrete
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 from moduls_to_calculate.diagram import DiagramConcrete
-from variables.variables_for_material import Result, GeneralGraphicForResult
+from variables.variables_for_material import Result, GeneralGraphicForResult, ResultGraphSteel
 from variables.variables_the_program import Menus
 
 
@@ -255,39 +256,24 @@ def make_a_list_with_preliminary_eo_eu(eo_i: float, eu_max: float,
     return list_eo_eu
 
 
-def calculate_concrete(list_of_concrete_sections: list[AConcreteSection], e_top: float, e_bottom: float, h: float,
-                       type_of_diagram_concrete: int) -> tuple[int, int, list[Any]] | None:
+def calculate_an_element(list_of_elements: list[ASteelLine|AConcreteSection], e_top: float, e_bottom: float, h: float,
+                         type_of_diagram: int) -> tuple[int, int, list[Any]] | None:
+    """the function calculates a list of element
+    concrete section os a line of steel
+    :keyword"""
     normal_force = 0
     moment = 0
-    graphic_concrete = []
-    for concrete_section in list_of_concrete_sections:
-        result_concrete_i = concrete_section.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h,
-                                                           type_of_diagram=type_of_diagram_concrete)
-        if result_concrete_i is None:
+    graphic = []
+    for an_element in list_of_elements:
+        result_i = an_element.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h,
+                                                     type_of_diagram=type_of_diagram)
+        if result_i is None:
             return None
-        normal_force_i, moment_i, graphic_i = result_concrete_i
+        normal_force_i, moment_i, graphic_i = result_i
         normal_force += normal_force_i
         moment += moment_i
-        graphic_concrete.append(graphic_i)
-    return normal_force, moment, graphic_concrete
-
-
-def calculate_steel(list_of_steel: list[ASteelLine], e_top: float, e_bottom: float, h: float,
-                    type_of_diagram_steel: int) -> tuple[int, int, list[Any]] | None:
-    graphic_steel = []
-    normal_force_steel = 0
-    moment_steel = 0
-    for steel_section in list_of_steel:
-        result_steel_i = steel_section.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h,
-                                                     type_of_diagram=type_of_diagram_steel)
-        if result_steel_i is None:
-            return None
-        normal_force_i, moment_i, graphic_i = result_steel_i
-        normal_force_steel += normal_force_i
-        moment_steel += moment_i
-        graphic_steel.append(graphic_i)
-    return normal_force_steel, moment_steel, graphic_steel
-
+        graphic.append(graphic_i)
+    return normal_force, moment, graphic
 
 def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                        list_of_concrete_sections: list[AConcreteSection],
@@ -300,24 +286,76 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                        carbon: CarbonSegment = None,
                        calculate_with_additional_plate: bool = False,
                        additional_plate=None) -> Result | NoneResult:
+    # section without reinforcement
+    result_normal_section = calculate_a_normal_section(e_top=e_top, e_bottom=e_bottom, h=h,
+                                                       list_of_concrete_sections=list_of_concrete_sections,
+                                                       list_of_steel=list_of_steel,
+                                                       type_of_diagram_concrete=type_of_diagram_concrete,
+                                                       type_of_diagram_steel=type_of_diagram_steel)
+    if isinstance(result_normal_section, NoneResult):
+        return result_normal_section
+    normal_force_1, moment_1, graphic_concrete_1, graphic_steel_1 = result_normal_section
+
+    # reinforcement with carbon
+    result_carbon = calculate_carbon (e_top=e_top, e_bottom=e_bottom, h=h, carbon=carbon, calculate_with_carbon=calculate_with_carbon)
+    if isinstance(result_carbon, NoneResult):
+        return result_carbon
+    normal_force_carbon, moment_carbon, graphic_carbon = result_carbon
+
+    # reinforcement with an additional plate
+    result_additional_plate = calculate_an_additional_plate(e_top=e_top, e_bottom=e_bottom, h=h,
+                                                            additional_plate=additional_plate,
+                                                            calculate_with_additional_plate=calculate_with_additional_plate)
+    if isinstance(result_additional_plate, NoneResult):
+        return result_additional_plate
+    normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2 = result_additional_plate
+
+    moment = normal_force_0 * e0 + moment_1 + moment_carbon + moment_add_plate # moment from the external normal
+    normal_force = normal_force_1 + normal_force_carbon + normal_force_add_plate    # force kNm
+    dn = normal_force_1  + normal_force_0 + normal_force_carbon  # external normal force
+
+    # strain is positive kN
+    sc = concrete_diagram.get_stress(ec=e_top,
+                                     typ_of_diagram=type_of_diagram_concrete)
+
+    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete_1 + graphic_concrete_2,
+                                      graphic_for_steel=graphic_steel_1 + graphic_steel_2,
+                                      graphic_for_carbon=graphic_carbon)
+    result = Result(normal_force=normal_force, moment=moment, graph=graphic, eu=e_bottom, eo=e_top, dn=dn, sc=sc)
+    return result
+
+def calculate_a_normal_section(e_top: float, e_bottom: float, h: float,
+                       list_of_concrete_sections: list[AConcreteSection],
+                       list_of_steel: list[ASteelLine],
+                       type_of_diagram_concrete: int,
+                       type_of_diagram_steel: int) -> NoneResult | tuple[int, int, list[Any], list[Any]]:
+    """the function calculates a normal section without reinforcement
+    (without carbon and an additional plate)"""
+
     # concrete
-    result_concrete = calculate_concrete(
-        list_of_concrete_sections=list_of_concrete_sections,
+    result_concrete = calculate_an_element(
+        list_of_elements=list_of_concrete_sections,
         e_top=e_top, e_bottom=e_bottom, h=h,
-        type_of_diagram_concrete=type_of_diagram_concrete)
+        type_of_diagram=type_of_diagram_concrete)
     if result_concrete is None:
         return NoneResult(cause='concrete')
     normal_force_concrete, moment_concrete, graphic_concrete = result_concrete
     # steel
-    result_steel = calculate_steel(
-        list_of_steel=list_of_steel,
+    result_steel = calculate_an_element(
+        list_of_elements=list_of_steel,
         e_top=e_top, e_bottom=e_bottom, h=h,
-        type_of_diagram_steel=type_of_diagram_steel)
+        type_of_diagram=type_of_diagram_steel)
     if result_steel is None:
         return NoneResult(cause='steel')
     normal_force_steel, moment_steel, graphic_steel = result_steel
+    normal_force = normal_force_concrete + normal_force_steel
+    moment = moment_concrete + moment_steel
+    return normal_force, moment, graphic_concrete, graphic_steel
 
-    # carbon
+def calculate_carbon(e_top: float, e_bottom: float, h: float, carbon: CarbonSegment,
+                     calculate_with_carbon: bool) -> NoneResult | tuple[
+    float | int, float | int, ResultGraphSteel | Any]:
+    """the function calculates a carbon reinforcement for the whole section"""
     if calculate_with_carbon:
         result_carbon = carbon.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h, type_of_diagram=0)
         if result_carbon is None:
@@ -325,42 +363,35 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
         normal_force_carbon, moment_carbon, graphic_carbon = result_carbon
     else:
         normal_force_carbon, moment_carbon, graphic_carbon = 0, 0, carbon.get_null_graphic()
+    return normal_force_carbon, moment_carbon, graphic_carbon
 
-    # additional plate
+def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calculate_with_additional_plate: bool,
+                                  additional_plate: AdditionConcrete)-> NoneResult | tuple[
+                                                                        int, int, list[Any], list[Any]]:
+    """the function calculates an additional plate reinforcement for the whole section"""
     if calculate_with_additional_plate:
         # concrete
-        result_concrete = calculate_concrete(
-            list_of_concrete_sections=[additional_plate.section],
+        result_concrete = calculate_an_element(
+            list_of_elements=[additional_plate.section],
             e_top=e_top, e_bottom=e_bottom, h=h,
-            type_of_diagram_concrete=additional_plate.type_of_diagram_concrete)
+            type_of_diagram=additional_plate.type_of_diagram_concrete)
         if result_concrete is None:
             return NoneResult(cause='additional top plate, concrete')
         normal_force_concrete_2, moment_concrete_2, graphic_concrete_2 = result_concrete
         # steel
-        result_steel = calculate_steel(
-            list_of_steel=[additional_plate.steel.steel_line],
+        result_steel = calculate_an_element(
+            list_of_elements=[additional_plate.steel.steel_line],
             e_top=e_top, e_bottom=e_bottom, h=h,
-            type_of_diagram_steel=additional_plate.steel.steel_diagram)
+            type_of_diagram=additional_plate.steel.steel_diagram)
         if result_steel is None:
             return NoneResult(cause='additional top plate, steel')
         normal_force_steel_2, moment_steel_2, graphic_steel_2 = result_steel
+        normal_force_add_plate = normal_force_concrete_2 + normal_force_steel_2
+        moment_add_plate = moment_concrete_2 + moment_steel_2
     else:
-        normal_force_concrete_2, moment_concrete_2,normal_force_steel_2, moment_steel_2,  = 0, 0, 0,0
+        normal_force_add_plate, moment_add_plate = 0,0
         graphic_concrete_2, graphic_steel_2 = [], []
-    moment = normal_force_0 * e0 + moment_steel + moment_concrete + moment_carbon + moment_steel_2 + moment_concrete_2 # moment from the external normal
-    # force kNm
-    normal_force = normal_force_concrete + normal_force_steel + normal_force_carbon +normal_force_steel_2 +normal_force_concrete_2
-    dn = normal_force_concrete + normal_force_steel + normal_force_0 + normal_force_carbon  # external normal force
-    # strain is positive kN
-    sc = concrete_diagram.get_stress(ec=e_top,
-                                     typ_of_diagram=type_of_diagram_concrete)
-
-    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete + graphic_concrete_2,
-                                      graphic_for_steel=graphic_steel + graphic_steel_2,
-                                      graphic_for_carbon=graphic_carbon)
-    result = Result(normal_force=normal_force, moment=moment, graph=graphic, eu=e_bottom, eo=e_top, dn=dn, sc=sc)
-    return result
-
+    return normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2
 
 def find_precise_result_between_two_results(result_1: Result, result_2: Result, calculate_date: CalculateData,
                                             recursion: int = 0,

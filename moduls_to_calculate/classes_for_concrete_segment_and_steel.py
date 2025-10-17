@@ -189,11 +189,9 @@ class ASteelLine(ElementOfSection):
             return None
 
         normal_force = self._area * (ss + self._s0) / 1000  # kN (area mm, ss N/mm2)
-
         moment = normal_force * self._y / 100  # kNm
-        #if normal_force < 0:
-        #    moment = - moment
         graphic = ResultGraphSteel(yi=self._y, ss=ss, es=es, color=self.color_QColor)  # [[yi, si],..]
+
         return normal_force, moment, graphic
 
     def get_copy_of_me(self):
