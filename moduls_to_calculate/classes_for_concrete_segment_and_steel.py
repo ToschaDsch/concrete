@@ -101,7 +101,7 @@ class AConcreteSection(ElementOfSection):
             area_i = bi * dn * 100  # mm2
             yi += self._y0  # cm
             e_top -= self.e_init_top
-            e_bottom += self.e_init_bottom
+            e_bottom -= self.e_init_bottom
             ec = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, h=h, yi=yi)
             sc = self._concrete.get_stress(ec=ec,
                                            typ_of_diagram=type_of_diagram)  # N/mm2
@@ -126,8 +126,10 @@ class AConcreteSection(ElementOfSection):
         m_1 = result_1.moment
         e_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
         e_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
-        self.e_init_bottom = e_top
-        self.e_init_top = (e_top - e_bottom) / h * (h + self._h) + e_bottom
+        #self.e_init_bottom = e_top
+        #self.e_init_top = (e_top - e_bottom) / h * (h + self._h) + e_bottom
+        self.e_init_bottom = e_bottom
+        self.e_init_top = e_top
 
 
 class ASteelLine(ElementOfSection):
