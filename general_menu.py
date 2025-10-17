@@ -1056,9 +1056,11 @@ class GeneralWindow(QMainWindow):
         brush = QtGui.QBrush(MyColors.concrete_addition)
         section = self._section.addition_concrete.section
         self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
+
         # draw the steel
         steel = self._section.addition_concrete.steel
-        y = self._section.addition_concrete.section.y0 + steel.z*scale
+        y0 = get_y0(section=self._section, scale=scale)
+        y = y0 - (self._section.addition_concrete.steel.steel_line._y + z) * scale
         self.draw_carbon_or_a_line_of_steel(y=y, area=steel.area, color=steel.color, scale=scale)
 
     def draw_normal_force(self, scale: float, z):

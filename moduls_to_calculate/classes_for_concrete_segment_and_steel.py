@@ -115,7 +115,7 @@ class AConcreteSection(ElementOfSection):
     def get_copy_of_me(self):
         return AConcreteSection(bo=self._bo, bu=self._bu, y0=self._y0, h=self._h)
 
-    def calculate_e_init(self, result__1: Result, result_1: Result, m_init: float, h: float):
+    def calculate_e_init_additional_plate(self, result__1: Result, result_1: Result, m_init: float, h: float):
         """
         :param h:
         :param m_init:
@@ -124,8 +124,10 @@ class AConcreteSection(ElementOfSection):
         """
         m__1 = result__1.moment
         m_1 = result_1.moment
-        self.e_init_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
-        self.e_init_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
+        e_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
+        e_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
+        self.e_init_bottom = e_top
+        self.e_init_top = (e_top - e_bottom) / h * (h + self._h) + e_bottom
 
 
 class ASteelLine(ElementOfSection):
@@ -134,7 +136,7 @@ class ASteelLine(ElementOfSection):
         self._f0_1k = 500 / 1.15
         self._fk = 525 / 1.15
         self._d = d
-        self._y = y
+        self._y = y  # from the bottom
         self._n = n
         self._m = m
         self._steel: DiagramSteel = self._get_diagram_for_the_steel(new_steel=steel)
@@ -144,6 +146,7 @@ class ASteelLine(ElementOfSection):
         self._color_rgba = get_random_color()
         self._color_str = get_str_from_color(color_rgba=self._color_rgba)
         self.e_init = 0
+        self.e_init_add_plate = 0
 
     @staticmethod
     def _get_diagram_for_the_steel(new_steel) -> None | DiagramSteel | DiagramCarbon:
@@ -179,13 +182,13 @@ class ASteelLine(ElementOfSection):
         :param type_of_diagram:
         returns normal force kN
                     moment  kNm"""
-        es = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, yi=self._y, h=h) - self._e0 -  self.e_init  # e0 - prestress
+        es = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, yi=self._y, h=h) - self._e0 - self.e_init - self.e_init_add_plate  # e0 - prestress
         ss = self._steel.get_stress(ec=es, typ_of_diagram=type_of_diagram)
         if ss is None:
             print('steel stress is None', 'e_top = ', e_top, 'e_bottom = ', e_bottom)
             return None
 
-        normal_force = self._area * (ss + self._s0) / 1000  # kN
+        normal_force = self._area * (ss + self._s0) / 1000  # kN (area mm, ss N/mm2)
 
         moment = normal_force * self._y / 100  # kNm
         #if normal_force < 0:
@@ -209,6 +212,7 @@ class ASteelLine(ElementOfSection):
         self._s0 = s0
         self._e0 = self._steel.get_e_from_s(typ_of_diagram=type_of_diagram, s=s0)
         self._area = math.pi * (self._d * 0.5) ** 2 * self._m * self._n  # mm2
+
 
     @property
     def steel(self):
@@ -236,8 +240,21 @@ class ASteelLine(ElementOfSection):
         m_1 = result_1.moment
         ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._y)
         ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._y)
-        e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
-        self.e_init = e_init
+        self.e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
+        print("e_init, steel", self.e_init)
+
+    def calculate_e_init_additional_plate(self, result__1: Result, result_1: Result, m_init: float, h: float):
+        """
+        :param h:
+        :param m_init:
+        :param result_1:    result i +1
+        :param result__1:  result i -1
+        """
+        m__1 = result__1.moment
+        m_1 = result_1.moment
+        e_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
+        e_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
+        self.e_init_add_plate = (e_top - e_bottom) / h * (self._y + h) + e_bottom
 
 
 def get_random_color() -> list[int]:

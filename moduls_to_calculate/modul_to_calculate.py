@@ -105,7 +105,7 @@ def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: flo
     if carbon.calculate_with_carbon and m_init > 0:
         return calculation_with_carbon(carbon=carbon, calculate_date=calculate_date, m_init=m_init, n_de=n_de,
                                          e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
-    elif additional_plate.calculate_with_top_plate and additional_plate.m_int > 0:
+    elif additional_plate.calculate_with_top_plate:
         return calculation_with_addiction_plate(additional_plate=additional_plate, calculate_date=calculate_date,
                                                 m_init=additional_plate.m_int, n_de=n_de,
                                                 e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
@@ -128,30 +128,23 @@ def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: floa
 
 def calculation_with_addiction_plate(additional_plate, calculate_date: CalculateData,
                                      m_init: float, n_de: int,
-                            e_bottom_max: float, h: float, y_min: float, e_top_max: float, ) -> defaultdict:
+                            e_bottom_max: float, h: float, y_min: float, e_top_max: float) -> defaultdict:
     """the function calculate the result with a plate at the top of the section
     after m > m_inf"""
     # calculation without carbon for e_init
     additional_plate.calculate_with_top_plate = False
-    result_0 = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
-                                  calculate_date=calculate_date, e_top_max=e_top_max)
-    if list(result_0.keys())[-1] < m_init:
-        return result_0
-    result = defaultdict()
-    result__1 = None
-    result_1 = None
-    for m_i, result_i in result_0.items():
-        if m_i <= m_init:
-            result[m_i] = result_i
-            result__1 = result_i
-        else:
-            result_1 = result_i
-            break
-    additional_plate.steel.steel_line.calculate_e_init(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
-    additional_plate.section.calculate_e_init(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
+    calculate_date.calculate_with_additional_plate = False
+    result, result_1, result__1 = calculate_to_the_moment(calculate_date=calculate_date,
+                                     m_init=m_init, n_de=n_de,
+                            e_bottom_max=e_bottom_max, h=h, y_min=y_min, e_top_max=e_top_max)
+    if result_1 is None:
+        return result
+    additional_plate.steel.steel_line.calculate_e_init_additional_plate(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
+    additional_plate.section.calculate_e_init_additional_plate(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
 
     # calculation with the plate
     additional_plate.calculate_with_top_plate = True
+    calculate_date.calculate_with_additional_plate = True
     result_add_plate = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                        calculate_date=calculate_date, e_top_max=e_top_max)
     for m_i, result_i in result_add_plate.items():
@@ -161,17 +154,17 @@ def calculation_with_addiction_plate(additional_plate, calculate_date: Calculate
             result[m_i] = result_i
     return result
 
-
-def calculation_with_carbon(carbon: CarbonSegment, calculate_date: CalculateData, m_init: float, n_de: int,
-                            e_bottom_max: float, h: float, y_min: float, e_top_max: float, ) -> defaultdict:
-    # calculation without carbon for e_init
-    carbon.calculate_with_carbon = False
-    calculate_date.calculate_with_carbon.carbon.calculate_with_carbon = False
-    calculate_date.calculate_with_carbon.calculate_with_carbon = False
+def calculate_to_the_moment(m_init: float, n_de: int,
+                            e_bottom_max: float, h: float, y_min: float, e_top_max: float,
+                            calculate_date: CalculateData) -> tuple[defaultdict, None, None] | tuple[
+    defaultdict[Any, Any], Any | None, Any | None]:
+    """the function make normal calculation without addition plat and carbon
+    until m < m_init
+    and returns a dict with all results + a result with m < m_init, a result with m > m_init """
     result_0 = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                   calculate_date=calculate_date, e_top_max=e_top_max)
     if list(result_0.keys())[-1] < m_init:
-        return result_0
+        return result_0, None, None
     result = defaultdict()
     result__1 = None
     result_1 = None
@@ -182,6 +175,20 @@ def calculation_with_carbon(carbon: CarbonSegment, calculate_date: CalculateData
         else:
             result_1 = result_i
             break
+    return result, result_1, result__1
+
+def calculation_with_carbon(carbon: CarbonSegment, calculate_date: CalculateData, m_init: float, n_de: int,
+                            e_bottom_max: float, h: float, y_min: float, e_top_max: float, ) -> defaultdict:
+    # calculation without carbon for e_init
+    carbon.calculate_with_carbon = False
+    calculate_date.calculate_with_carbon.carbon.calculate_with_carbon = False
+    calculate_date.calculate_with_carbon.calculate_with_carbon = False
+    result, result_1, result__1 = calculate_to_the_moment(calculate_date=calculate_date,
+                                                          m_init=m_init, n_de=n_de,
+                                                          e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+                                                          e_top_max=e_top_max)
+    if result_1 is None:
+        return result
     carbon.calculate_e_init(result__1=result__1, result_1=result_1, m_init=m_init, h=h)
 
     # calculation with the carbon
@@ -309,6 +316,7 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
     if result_steel is None:
         return NoneResult(cause='steel')
     normal_force_steel, moment_steel, graphic_steel = result_steel
+
     # carbon
     if calculate_with_carbon:
         result_carbon = carbon.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h, type_of_diagram=0)
@@ -317,6 +325,8 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
         normal_force_carbon, moment_carbon, graphic_carbon = result_carbon
     else:
         normal_force_carbon, moment_carbon, graphic_carbon = 0, 0, carbon.get_null_graphic()
+
+    # additional plate
     if calculate_with_additional_plate:
         # concrete
         result_concrete = calculate_concrete(
