@@ -1159,6 +1159,8 @@ class GeneralWindow(QMainWindow):
 
         calculate_with_add_plate: bool = new_list_of_add_plate['to_calculate'] if 'to_calculate' in new_list_of_add_plate else False
         self.checkbox_addition_top_plate.setChecked(calculate_with_add_plate)
+        if not 'concrete' in new_list_of_add_plate:
+            return None
         concrete_section = new_list_of_add_plate['concrete']
         concrete_class = concrete_section['concrete_class']
         index = MaterialVariables.concrete_class.index(concrete_class)
@@ -1379,15 +1381,15 @@ class GeneralWindow(QMainWindow):
                                scale_steel=scale_steel, x0_y0=x0_y0_z2)
 
         # draw strain
-        eo = result.eo
-        eu = result.eu
-        self.draw_strains_for_section_canvas(x0_y0=x0_y0_z, eo=eo, eu=eu)
+        e_top = result.e_top
+        e_bottom = result.e_bottom
+        self.draw_strains_for_section_canvas(x0_y0=x0_y0_z, e_top=e_top, e_bottom=e_bottom)
         if self._section.addition_concrete.calculate_with_top_plate:
-            self.draw_strains_for_additional_plate(x0_y0=x0_y0_z, eo=eo, eu=eu) # TODO
+            self.draw_strains_for_additional_plate(x0_y0=x0_y0_z, e_top=result.e_top_add_plate,
+                                                   e_bottom=result.e_bottom_add_plate)
         self.draw_strains_for_diagram_canvas(result=result)
 
-    def draw_strains_for_additional_plate(self, x0_y0: list[float], eo: float, eu: float) -> None:
-        #TODO
+    def draw_strains_for_additional_plate(self, x0_y0: list[float], e_top: float, e_bottom: float) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_section.setPen(pen)
@@ -1397,20 +1399,20 @@ class GeneralWindow(QMainWindow):
         scale_x = b_c / x_max * Menus.scale_canvas_section * 0.5*0.8
         scale_y = self.make_scale_for_section()
         # coordinates at the bottom
-        x0 = int(x0_y0[0] + eu * scale_x)
-        y0 = int(x0_y0[1])
+        x0 = int(x0_y0[0] + e_bottom * scale_x)
+        y0 = int(x0_y0[1] - y_max * scale_y)
         # coordinates above
-        x1 = int(x0_y0[0] + eo * scale_x)
-        y1 = int(x0_y0[1] - y_max * scale_y)
+        x1 = int(x0_y0[0] + e_top * scale_x)
+        y1 = int(x0_y0[1] - (y_max + self._section.addition_concrete.h) * scale_y)
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
-        text_bottom = str(round(eu, 5))
+        text_bottom = str(round(e_bottom, 5))
         self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
-        text_top = str(round(eo, 5))
+        text_top = str(round(e_top, 5))
         self.painter_section.drawText(x1, y1 - 5, text_top)
 
-    def draw_strains_for_section_canvas(self, x0_y0: list[float], eo: float, eu: float) -> None:
+    def draw_strains_for_section_canvas(self, x0_y0: list[float], e_top: float, e_bottom: float) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_section.setPen(pen)
@@ -1420,17 +1422,20 @@ class GeneralWindow(QMainWindow):
         scale_x = b_c / x_max * Menus.scale_canvas_section * 0.5*0.8
         scale_y = self.make_scale_for_section()
         # coordinates at the bottom
-        x0 = int(x0_y0[0] + eu * scale_x)
+        x0 = int(x0_y0[0] + e_bottom * scale_x)
         y0 = int(x0_y0[1])
         # coordinates above
-        x1 = int(x0_y0[0] + eo * scale_x)
-        y1 = int(x0_y0[1] - y_max * scale_y)
+        x1 = int(x0_y0[0] + e_top * scale_x)
+        if self._section.addition_concrete.calculate_with_top_plate:
+            y1 = int(x0_y0[1] - (y_max + self._section.addition_concrete.h) * scale_y)
+        else:
+            y1 = int(x0_y0[1] - y_max * scale_y)
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
-        text_bottom = str(round(eu, 5))
+        text_bottom = str(round(e_bottom, 5))
         self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
-        text_top = str(round(eo, 5))
+        text_top = str(round(e_top, 5))
         self.painter_section.drawText(x1, y1 - 5, text_top)
 
     def draw_strains_for_diagram_canvas(self, result: Result):
@@ -1450,7 +1455,7 @@ class GeneralWindow(QMainWindow):
         scale_x_y = get_scale_x_y_for_diagram(max_values=max_values, board=board)
         x_ = board
         y_ = y - board
-        ec = result.eo
+        ec = result.e_top
         sc = result.sc
         r = Menus.radius_for_diagram_strain_circles
         x = int(x_ + ec * scale_x_y[0])

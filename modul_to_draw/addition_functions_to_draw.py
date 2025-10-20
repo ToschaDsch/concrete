@@ -45,11 +45,11 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
                                       graphic_for_steel=graphic_for_steel, graphic_for_carbon=graphic_for_carbon)
     # dates for result
     normal_force = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.normal_force, r2=result_2.normal_force)
-    eo = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.eo, r2=result_2.eo)
-    eu = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.eu, r2=result_2.eu)
+    eo = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top, r2=result_2.e_top)
+    eu = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom, r2=result_2.e_bottom)
     dn = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.dn, r2=result_2.dn)
     sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.sc, r2=result_2.sc)
-    result = Result(normal_force=normal_force, moment=mi, graph=graphic, eo=eo, eu=eu, dn=dn, sc=sc)
+    result = Result(normal_force=normal_force, moment=mi, graph=graphic, e_top=eo, e_bottom=eu, dn=dn, sc=sc)
     return result
 
 def get_es_yi_ss(mi, m1, m2, graph_1, graph_2):

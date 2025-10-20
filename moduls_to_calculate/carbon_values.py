@@ -107,8 +107,8 @@ class CarbonSegment(ElementOfSection):
         """
         m__1 = result__1.moment
         m_1 = result_1.moment
-        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._z)
-        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._z)
+        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.e_top, eu=result_1.e_bottom, h=h, z=self._z)
+        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.e_top, eu=result__1.e_bottom, h=h, z=self._z)
         e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
         self.e_init = e_init
 

@@ -86,7 +86,7 @@ class AConcreteSection(ElementOfSection):
             return self._bo
 
     def get_n_m_graph(self, e_top: float, e_bottom: float, h: float, type_of_diagram: int) -> tuple[int, int, list[
-        Any]] | None:
+        Any], float, float] | None:
         """the function returns normal force and moment relative of bottom of the section
                 + list for graphic with yi, stress
                 :returns normal force kN
@@ -95,14 +95,17 @@ class AConcreteSection(ElementOfSection):
         normal_force = 0
         moment = 0
         list_for_graphic = []  # [[yi, si],..]
+        e_i = []
+        e_top -= self.e_init_top        # correct the value for the reinforcement
+        e_bottom -= self.e_init_bottom
         for i in range(self._n):
             yi = (i + 0.5) * dn  # cm
             bi = (self._bo - self._bu) / self._h * yi + self._bu
             area_i = bi * dn * 100  # mm2
             yi += self._y0  # cm
-            e_top -= self.e_init_top
-            e_bottom -= self.e_init_bottom
-            ec = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, h=h, yi=yi)
+
+            ec = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, h=h, yi=yi)
+            e_i.append(ec)
             sc = self._concrete.get_stress(ec=ec,
                                            typ_of_diagram=type_of_diagram)  # N/mm2
             if sc is None:
@@ -110,7 +113,7 @@ class AConcreteSection(ElementOfSection):
             normal_force += area_i * sc / 1000  # kN
             moment += area_i * sc * yi / 100000  # kNm
             list_for_graphic.append(ResultGraphConcrete(ec=ec, yi=yi, sc=sc))
-        return normal_force, moment, list_for_graphic
+        return normal_force, moment, list_for_graphic, e_i[0], e_i[-1]
 
     def get_copy_of_me(self):
         return AConcreteSection(bo=self._bo, bu=self._bu, y0=self._y0, h=self._h)
@@ -122,14 +125,19 @@ class AConcreteSection(ElementOfSection):
         :param result_1:    result i +1
         :param result__1:  result i -1
         """
+        if result__1 is None or result_1 is None:
+            self.e_init_bottom = 0
+            self.e_init_top = 0
+            return None
         m__1 = result__1.moment
         m_1 = result_1.moment
-        e_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
-        e_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
-        #self.e_init_bottom = e_top
-        #self.e_init_top = (e_top - e_bottom) / h * (h + self._h) + e_bottom
+        e_top = (result_1.e_top - result__1.e_top) / (m_1 - m__1) * (m_init - m__1) + result__1.e_top
+        e_bottom = (result_1.e_bottom - result__1.e_bottom) / (m_1 - m__1) * (m_init - m__1) + result__1.e_bottom
+        h_new = h + self._h
+
         self.e_init_bottom = e_bottom
-        self.e_init_top = e_top
+        self.e_init_top = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, h=h, yi=h_new)
+        return None
 
 
 class ASteelLine(ElementOfSection):
@@ -184,7 +192,7 @@ class ASteelLine(ElementOfSection):
         :param type_of_diagram:
         returns normal force kN
                     moment  kNm"""
-        es = get_ei_from_eo_eu_yi_h(eo=e_top, eu=e_bottom, yi=self._y, h=h) - self._e0 - self.e_init - self.e_init_add_plate  # e0 - prestress
+        es = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, yi=self._y, h=h) - self._e0 - self.e_init - self.e_init_add_plate  # e0 - prestress
         ss = self._steel.get_stress(ec=es, typ_of_diagram=type_of_diagram)
         if ss is None:
             print('steel stress is None', 'e_top = ', e_top, 'e_bottom = ', e_bottom)
@@ -194,7 +202,7 @@ class ASteelLine(ElementOfSection):
         moment = normal_force * self._y / 100  # kNm
         graphic = ResultGraphSteel(yi=self._y, ss=ss, es=es, color=self.color_QColor)  # [[yi, si],..]
 
-        return normal_force, moment, graphic
+        return normal_force, moment, graphic, 0, 0
 
     def get_copy_of_me(self):
         return ASteelLine(d=self._d, y=self._y + 5, n=self._n, m=self._m,
@@ -238,8 +246,8 @@ class ASteelLine(ElementOfSection):
         """
         m__1 = result__1.moment
         m_1 = result_1.moment
-        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.eo, eu=result_1.eu, h=h, z=self._y)
-        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.eo, eu=result__1.eu, h=h, z=self._y)
+        ec_1 = get_ei_from_eo_eu_z_h(eo=result_1.e_top, eu=result_1.e_bottom, h=h, z=self._y)
+        ec__1 = get_ei_from_eo_eu_z_h(eo=result__1.e_top, eu=result__1.e_bottom, h=h, z=self._y)
         self.e_init = (ec_1 - ec__1) / (m_1 - m__1) * (m_init - m__1) + ec__1
         print("e_init, steel", self.e_init)
 
@@ -250,12 +258,15 @@ class ASteelLine(ElementOfSection):
         :param result_1:    result i +1
         :param result__1:  result i -1
         """
+        if result_1 is None or result__1 is None:
+            self.e_init_add_plate = 0
+            return None
         m__1 = result__1.moment
         m_1 = result_1.moment
-        e_top = (result_1.eo - result__1.eo) / (m_1 - m__1) * (m_init - m__1) + result__1.eo
-        e_bottom = (result_1.eu - result__1.eu) / (m_1 - m__1) * (m_init - m__1) + result__1.eu
-        self.e_init_add_plate = (e_top - e_bottom) / h * (self._y + h) + e_bottom
-
+        e_top = (result_1.e_top - result__1.e_top) / (m_1 - m__1) * (m_init - m__1) + result__1.e_top
+        e_bottom = (result_1.e_bottom - result__1.e_bottom) / (m_1 - m__1) * (m_init - m__1) + result__1.e_bottom
+        self.e_init_add_plate = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, yi=self._y, h=h)
+        return None
 
 def get_random_color() -> list[int]:
     """rgb(255, 0, 0)"""
@@ -270,5 +281,5 @@ def get_str_from_color(color_rgba: list[int]) -> str:
     return f"rgb({color_rgba[0]}, {color_rgba[1]}, {color_rgba[2]});"
 
 
-def get_ei_from_eo_eu_yi_h(eo: float, eu: float, h: float, yi: float) -> float:
-    return (eo - eu) * yi / h + eu
+def get_ei_from_eo_eu_yi_h(e_top: float, e_bottom: float, h: float, yi: float) -> float:
+    return (e_top - e_bottom) * yi / h + e_bottom

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from ssl import DER_cert_to_PEM_cert
 from typing import Any
 
 from moduls_to_calculate.carbon_values import CarbonSegment
@@ -104,27 +105,48 @@ def calculate_result(e_top_max: float, e_bottom_max: float, h: float, y_min: flo
                                    addition_plate=additional_plate)
     n_de = int(n_de)
     if carbon.calculate_with_carbon and m_init > 0:
-        return calculation_with_carbon(carbon=carbon, calculate_date=calculate_date, m_init=m_init, n_de=n_de,
+        result = calculation_with_carbon(carbon=carbon, calculate_date=calculate_date, m_init=m_init, n_de=n_de,
                                          e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
     elif additional_plate.calculate_with_top_plate:
-        return calculation_with_addiction_plate(additional_plate=additional_plate, calculate_date=calculate_date,
+        result = calculation_with_addiction_plate(additional_plate=additional_plate, calculate_date=calculate_date,
                                                 m_init=additional_plate.m_int, n_de=n_de,
                                                 e_bottom_max=e_bottom_max, e_top_max=e_top_max, y_min=y_min, h=h)
     else:
-        return normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+        result = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                     calculate_date=calculate_date, e_top_max=e_top_max)
+
+    result = check_the_result(result=result, dn_max=dn_max)
+    return result
+
+def check_the_result(result: defaultdict, dn_max: float) -> defaultdict:
+    """the function deletes laa results with normal force > dn_max"""
+    new_dict = defaultdict()
+    for key, value in result.items():
+        if abs(value.dn) <= dn_max:
+            new_dict[key] = value
+    return new_dict
 
 
 def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: float, y_min: float,
                        calculate_date: CalculateData, e_top_reinforcement: float=None) -> defaultdict:
     """the function calculate a range for top displacement and find a result for all nu,bers"""
     result = defaultdict()
-    n_0 = 0 if e_top_reinforcement is None else int(0.8*(e_top_max - e_top_reinforcement)/e_top_max*n_de) # not calculate from null
+    if e_top_reinforcement is None:
+        n_0 = 0
+    else:
+        if calculate_date.calculate_with_additional_plate:
+            h += calculate_date.additional_plate.h
+            calculate_date.h = h
+            n_0 = 2*int(0.8*e_top_reinforcement/e_top_max*n_de) # not calculate from null
+            n_de *= 2
+        else:
+            n_0 = 0
+
     for i in range(n_0, n_de):
-        eo_i = e_top_max * i / n_de
-        result_i = find_eo_and_get_result(e_top_i=eo_i, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
+        e_top_i = e_top_max * i / n_de
+        result_i = find_eo_and_get_result(e_top_i=e_top_i, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                           calculate_date=calculate_date, n_de=n_de)
-        if result_i is None:
+        if result_i is None or result_i.moment < 0:
             continue
         result[result_i.moment] = result_i
     return result
@@ -149,7 +171,7 @@ def calculation_with_addiction_plate(additional_plate, calculate_date: Calculate
     additional_plate.calculate_with_top_plate = True
     calculate_date.calculate_with_additional_plate = True
     result_add_plate = normal_calculation(n_de=n_de, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
-                                       calculate_date=calculate_date, e_top_max=e_top_max, e_top_reinforcement=result_1.eo)
+                                          calculate_date=calculate_date, e_top_max=e_top_max, e_top_reinforcement=result_1.e_top)
     for m_i, result_i in result_add_plate.items():
         if m_i <= m_init:
             continue
@@ -260,23 +282,24 @@ def make_a_list_with_preliminary_eo_eu(eo_i: float, eu_max: float,
 
 
 def calculate_an_element(list_of_elements: list[ASteelLine|AConcreteSection], e_top: float, e_bottom: float, h: float,
-                         type_of_diagram: int) -> tuple[int, int, list[Any]] | None:
+                         type_of_diagram: int) -> tuple[int, int, list[Any], float, float] | None:
     """the function calculates a list of element
     concrete section os a line of steel
     :keyword"""
     normal_force = 0
     moment = 0
     graphic = []
+    e_bottom_i, e_top_i = 0, 0
     for an_element in list_of_elements:
         result_i = an_element.get_n_m_graph(e_top=e_top, e_bottom=e_bottom, h=h,
                                                      type_of_diagram=type_of_diagram)
         if result_i is None:
             return None
-        normal_force_i, moment_i, graphic_i = result_i
+        normal_force_i, moment_i, graphic_i, e_bottom_i, e_top_i = result_i
         normal_force += normal_force_i
         moment += moment_i
         graphic.append(graphic_i)
-    return normal_force, moment, graphic
+    return normal_force, moment, graphic, e_bottom_i, e_top_i
 
 def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                        list_of_concrete_sections: list[AConcreteSection],
@@ -313,20 +336,24 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                                                             type_of_diagram_steel=type_of_diagram_steel)
     if isinstance(result_additional_plate, NoneResult):
         return result_additional_plate
-    normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2 = result_additional_plate
+    normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2, e_bottom_i_add_plate, e_top_i_add_plate = result_additional_plate
 
     moment = normal_force_0 * e0 + moment_1 + moment_carbon + moment_add_plate # moment from the external normal
     normal_force = normal_force_1 + normal_force_carbon + normal_force_add_plate    # force kNm
     dn = normal_force_1  + normal_force_0 + normal_force_carbon  # external normal force
+    graphic_concrete = [graphic_concrete_1[0] + graphic_concrete_2[0]] if len(graphic_concrete_2) > 0 else graphic_concrete_1
+    graphic_steel = graphic_steel_1 + graphic_steel_2
 
     # strain is positive kN
     sc = concrete_diagram.get_stress(ec=e_top,
                                      typ_of_diagram=type_of_diagram_concrete)
 
-    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete_1 + graphic_concrete_2,
-                                      graphic_for_steel=graphic_steel_1 + graphic_steel_2,
+    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete,
+                                      graphic_for_steel=graphic_steel,
                                       graphic_for_carbon=graphic_carbon)
-    result = Result(normal_force=normal_force, moment=moment, graph=graphic, eu=e_bottom, eo=e_top, dn=dn, sc=sc)
+    result = Result(normal_force=normal_force, moment=moment,
+                    graph=graphic, e_bottom=e_bottom, e_top=e_top, dn=dn, sc=sc,
+                    e_top_add_plate=e_top_i_add_plate, w_bottom_add_plate=e_bottom_i_add_plate)
     return result
 
 def calculate_a_normal_section(e_top: float, e_bottom: float, h: float,
@@ -344,7 +371,7 @@ def calculate_a_normal_section(e_top: float, e_bottom: float, h: float,
         type_of_diagram=type_of_diagram_concrete)
     if result_concrete is None:
         return NoneResult(cause='concrete')
-    normal_force_concrete, moment_concrete, graphic_concrete = result_concrete
+    normal_force_concrete, moment_concrete, graphic_concrete, e_bottom_i, e_top_i = result_concrete
     # steel
     result_steel = calculate_an_element(
         list_of_elements=list_of_steel,
@@ -352,7 +379,7 @@ def calculate_a_normal_section(e_top: float, e_bottom: float, h: float,
         type_of_diagram=type_of_diagram_steel)
     if result_steel is None:
         return NoneResult(cause='steel')
-    normal_force_steel, moment_steel, graphic_steel = result_steel
+    normal_force_steel, moment_steel, graphic_steel, e_bottom_i, e_top_i = result_steel
     normal_force = normal_force_concrete + normal_force_steel
     moment = moment_concrete + moment_steel
     return normal_force, moment, graphic_concrete, graphic_steel
@@ -373,7 +400,7 @@ def calculate_carbon(e_top: float, e_bottom: float, h: float, carbon: CarbonSegm
 def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calculate_with_additional_plate: bool,
                                   additional_plate: AdditionConcrete,
                                   type_of_diagram_concrete: int, type_of_diagram_steel: int)-> NoneResult | tuple[
-                                                                        int, int, list[Any], list[Any]]:
+                                                                        int, int, list[Any], list[Any], float, float]:
     """the function calculates an additional plate reinforcement for the whole section"""
     if calculate_with_additional_plate:
         # concrete
@@ -383,7 +410,7 @@ def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calcu
             type_of_diagram=type_of_diagram_concrete)
         if result_concrete is None:
             return NoneResult(cause='additional top plate, concrete')
-        normal_force_concrete_2, moment_concrete_2, graphic_concrete_2 = result_concrete
+        normal_force_concrete_2, moment_concrete_2, graphic_concrete_2, e_bottom_i, e_top_i = result_concrete
         # steel
         result_steel = calculate_an_element(
             list_of_elements=[additional_plate.steel.steel_line],
@@ -391,13 +418,13 @@ def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calcu
             type_of_diagram=type_of_diagram_steel)
         if result_steel is None:
             return NoneResult(cause='additional top plate, steel')
-        normal_force_steel_2, moment_steel_2, graphic_steel_2 = result_steel
+        normal_force_steel_2, moment_steel_2, graphic_steel_2, e_bottom_i_2, e_top_i_2 = result_steel
         normal_force_add_plate = normal_force_concrete_2 + normal_force_steel_2
         moment_add_plate = moment_concrete_2 + moment_steel_2
     else:
-        normal_force_add_plate, moment_add_plate = 0,0
+        normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0,0
         graphic_concrete_2, graphic_steel_2 = [], []
-    return normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2
+    return normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2, e_bottom_i, e_top_i
 
 def find_precise_result_between_two_results(result_1: Result, result_2: Result, calculate_date: CalculateData,
                                             recursion: int = 0,
@@ -409,15 +436,16 @@ def find_precise_result_between_two_results(result_1: Result, result_2: Result, 
         return result_1
     if abs(result_2.dn) < calculate_date.dn_max:
         return result_2
-    eu_1 = result_1.eu
-    eu_2 = result_2.eu
+    eu_1 = result_1.e_bottom
+    eu_2 = result_2.e_bottom
     dn_1 = result_1.dn
     dn_2 = result_2.dn
     if dn_1 - dn_2 == 0:
-        return result_1
+        print("can't find", result_1)
+        return None
     else:
         e_bottom = (eu_2 - eu_1) / (dn_1 - dn_2) * dn_1 + eu_1
-        e_top = result_1.eo
+        e_top = result_1.e_top
 
     result = get_m_n_from_eu_eo(e_top=e_top, e_bottom=e_bottom, h=calculate_date.h,
                                 list_of_concrete_sections=calculate_date.list_of_concrete_sections,
