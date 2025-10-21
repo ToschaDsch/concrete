@@ -8,21 +8,29 @@ from variables.variables_the_program import Menus, MyColors, PenThicknessToDraw
 
 
 def make_intermediate_result_for_the_graphic(mi, result_1: Result,
-                                             result_2: Result) -> Result:
+                                             result_2: Result) -> Result | None:
     graphic_for_concrete = []
     m1 = result_1.moment
     m2 = result_2.moment
+
     # intermediate graphic for concrete
-    for j in range(len(result_1.graph.graphic_for_concrete)):
-        graph_for_one_element_i = []
-        for i in range(len(result_1.graph.graphic_for_concrete[j])):
-            graph_1: ResultGraphConcrete = result_1.graph.graphic_for_concrete[j][i]
-            graph_2: ResultGraphConcrete = result_2.graph.graphic_for_concrete[j][i]
-            ec = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ec, r2=graph_2.ec)
-            yi = graph_1.yi
-            sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.sc, r2=graph_2.sc)
-            graph_for_one_element_i.append(ResultGraphConcrete(ec=ec, yi=yi, sc=sc))
-        graphic_for_concrete.append(graph_for_one_element_i)
+    if result_1 is None:
+        return result_2
+    if result_2 is None:
+        return result_1
+    if len(result_1.graph.graphic_for_concrete) != len(result_2.graph.graphic_for_concrete):
+        graphic_for_concrete = result_1.graph.graphic_for_concrete
+    else:
+        for j in range(len(result_1.graph.graphic_for_concrete)):
+            graph_for_one_element_i = []
+            for i in range(len(result_1.graph.graphic_for_concrete[j])):
+                graph_1: ResultGraphConcrete = result_1.graph.graphic_for_concrete[j][i]
+                graph_2: ResultGraphConcrete = result_2.graph.graphic_for_concrete[j][i]
+                ec = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ec, r2=graph_2.ec)
+                yi = graph_1.yi
+                sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.sc, r2=graph_2.sc)
+                graph_for_one_element_i.append(ResultGraphConcrete(ec=ec, yi=yi, sc=sc))
+            graphic_for_concrete.append(graph_for_one_element_i)
 
     # intermediate graphic for steel
     graphic_for_steel = []
@@ -45,11 +53,14 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
                                       graphic_for_steel=graphic_for_steel, graphic_for_carbon=graphic_for_carbon)
     # dates for result
     normal_force = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.normal_force, r2=result_2.normal_force)
-    eo = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top, r2=result_2.e_top)
-    eu = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom, r2=result_2.e_bottom)
+    e_top = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top, r2=result_2.e_top)
+    e_bottom = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom, r2=result_2.e_bottom)
     dn = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.dn, r2=result_2.dn)
     sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.sc, r2=result_2.sc)
-    result = Result(normal_force=normal_force, moment=mi, graph=graphic, e_top=eo, e_bottom=eu, dn=dn, sc=sc)
+    e_top_add_plate = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top_add_plate, r2=result_2.e_top_add_plate)
+    e_bottom_add_plate = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom_add_plate, r2=result_2.e_bottom_add_plate)
+    result = Result(normal_force=normal_force, moment=mi, graph=graphic, e_top=e_top, e_bottom=e_bottom, dn=dn, sc=sc,
+                    e_top_add_plate=e_top_add_plate, e_bottom_add_plate=e_bottom_add_plate)
     return result
 
 def get_es_yi_ss(mi, m1, m2, graph_1, graph_2):

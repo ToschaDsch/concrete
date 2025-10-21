@@ -137,8 +137,7 @@ def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: floa
         if calculate_date.calculate_with_additional_plate:
             h += calculate_date.additional_plate.h
             calculate_date.h = h
-            n_0 = 2*int(0.8*e_top_reinforcement/e_top_max*n_de) # not calculate from null
-            n_de *= 2
+            n_0 = 0     #2*int(0.8*e_top_reinforcement/e_top_max*n_de) # not calculate from null
         else:
             n_0 = 0
 
@@ -336,24 +335,27 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
                                                             type_of_diagram_steel=type_of_diagram_steel)
     if isinstance(result_additional_plate, NoneResult):
         return result_additional_plate
-    normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2, e_bottom_i_add_plate, e_top_i_add_plate = result_additional_plate
+    (normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2,
+     e_bottom_i_add_plate, e_top_i_add_plate) = result_additional_plate
 
     moment = normal_force_0 * e0 + moment_1 + moment_carbon + moment_add_plate # moment from the external normal
     normal_force = normal_force_1 + normal_force_carbon + normal_force_add_plate    # force kNm
     dn = normal_force_1  + normal_force_0 + normal_force_carbon  # external normal force
-    graphic_concrete = [graphic_concrete_1[0] + graphic_concrete_2[0]] if len(graphic_concrete_2) > 0 else graphic_concrete_1
+    if len(graphic_concrete_2) > 0:
+        graphic_concrete_1.append(graphic_concrete_2[0])
+
     graphic_steel = graphic_steel_1 + graphic_steel_2
 
     # strain is positive kN
     sc = concrete_diagram.get_stress(ec=e_top,
                                      typ_of_diagram=type_of_diagram_concrete)
 
-    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete,
+    graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete_1,
                                       graphic_for_steel=graphic_steel,
                                       graphic_for_carbon=graphic_carbon)
     result = Result(normal_force=normal_force, moment=moment,
                     graph=graphic, e_bottom=e_bottom, e_top=e_top, dn=dn, sc=sc,
-                    e_top_add_plate=e_top_i_add_plate, w_bottom_add_plate=e_bottom_i_add_plate)
+                    e_top_add_plate=e_top_i_add_plate, e_bottom_add_plate=e_bottom_i_add_plate)
     return result
 
 def calculate_a_normal_section(e_top: float, e_bottom: float, h: float,
@@ -418,11 +420,11 @@ def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calcu
             type_of_diagram=type_of_diagram_steel)
         if result_steel is None:
             return NoneResult(cause='additional top plate, steel')
-        normal_force_steel_2, moment_steel_2, graphic_steel_2, e_bottom_i_2, e_top_i_2 = result_steel
+        normal_force_steel_2, moment_steel_2, graphic_steel_2, _, _ = result_steel
         normal_force_add_plate = normal_force_concrete_2 + normal_force_steel_2
         moment_add_plate = moment_concrete_2 + moment_steel_2
     else:
-        normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0,0
+        normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0.005,0.005
         graphic_concrete_2, graphic_steel_2 = [], []
     return normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2, e_bottom_i, e_top_i
 

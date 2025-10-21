@@ -22,6 +22,7 @@ def save_file_as(section: AllElementsOfTheSection, file=None):
         fob.write(json_data)
         fob.close()
         print('the file is saved')
+        print(json_data)
     except (FileExistsError, Exception):
         print('file not found')
     Menus.save_file_name = file

@@ -266,6 +266,8 @@ class ASteelLine(ElementOfSection):
         e_top = (result_1.e_top - result__1.e_top) / (m_1 - m__1) * (m_init - m__1) + result__1.e_top
         e_bottom = (result_1.e_bottom - result__1.e_bottom) / (m_1 - m__1) * (m_init - m__1) + result__1.e_bottom
         self.e_init_add_plate = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, yi=self._y, h=h)
+        self._e0 = 0
+        self.e_init = 0
         return None
 
 def get_random_color() -> list[int]:

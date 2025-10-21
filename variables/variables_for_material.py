@@ -85,7 +85,7 @@ class GeneralGraphicForResult:
 
 class Result:
     def __init__(self, normal_force: float, moment: float, graph: GeneralGraphicForResult, e_top: float, e_bottom: float,
-                 dn: float, sc: float, e_top_add_plate: float=0, w_bottom_add_plate: float=0):
+                 dn: float, sc: float, e_top_add_plate: float=0, e_bottom_add_plate: float=0):
         self.normal_force = normal_force  # normal force
         self.moment = moment  # moment
         self.graph: GeneralGraphicForResult = graph
@@ -94,7 +94,7 @@ class Result:
         self.dn = dn
         self.sc = sc
         self.e_top_add_plate = e_top_add_plate
-        self.e_bottom_add_plate = w_bottom_add_plate
+        self.e_bottom_add_plate = e_bottom_add_plate
 
     def __str__(self):
         return f"m={self.moment}, n={self.normal_force}, eo={self.e_top}, eu={self.e_bottom}, dn = {self.dn}"

@@ -483,7 +483,7 @@ class GeneralWindow(QMainWindow):
         label_n_de = QLabel('n_de = ')
         layout_n_de_line.addWidget(label_n_de)
         self.line_edit_n_de = QLineEdit(str(InitiationValues.d_e))
-        self.line_edit_n_de.editingFinished.connect(self.change_n_de)
+        self.line_edit_n_de.textChanged.connect(self.change_n_de)
         self.line_edit_n_de.setFixedWidth(Menus.width_line_edit)
         layout_n_de_line.addWidget(self.line_edit_n_de)
         layout_n_de_line.addWidget(QLabel(MenuNames.label_n_after))
@@ -499,7 +499,7 @@ class GeneralWindow(QMainWindow):
     def layout_normal_force_and_eccentricity(self, layout: QVBoxLayout):
         layout_norm_force = QHBoxLayout()
         label_n = QLabel('N, kN =')
-        self.line_edit_normal_force.editingFinished.connect(self.change_normal_force)
+        self.line_edit_normal_force.textChanged.connect(self.change_normal_force)
         self.line_edit_normal_force.setFixedWidth(Menus.width_line_edit)
         layout_norm_force.addWidget(label_n)
         layout_norm_force.addWidget(self.line_edit_normal_force)
@@ -518,7 +518,7 @@ class GeneralWindow(QMainWindow):
         layout_dn = QHBoxLayout()
         label_convergence = QLabel(MenuNames.convergence)
         label_dn = QLabel('dNmax, kN =')
-        self.line_edit_dn.editingFinished.connect(self.change_dn)
+        self.line_edit_dn.textChanged.connect(self.change_dn)
         self.line_edit_dn.setFixedWidth(Menus.width_line_edit)
         layout.addWidget(label_convergence)
         layout_dn.addWidget(label_dn)
@@ -533,6 +533,7 @@ class GeneralWindow(QMainWindow):
         self._section.dn = dn
         self._section.is_calculated = False
         self.draw_date_and_results()
+        return None
 
     def change_n_de(self):
         text = self.line_edit_n_de.text()
@@ -542,6 +543,7 @@ class GeneralWindow(QMainWindow):
         self._section.n_de = n_de
         self._section.is_calculated = False
         self.draw_date_and_results()
+        return None
 
     def change_normal_force(self):
         text = self.line_edit_normal_force.text()
@@ -551,6 +553,7 @@ class GeneralWindow(QMainWindow):
         normal_force = float(text)
         self._section.normal_force = normal_force
         self.draw_date_and_results()
+        return None
 
     def change_eccentricity(self):
         text = self.line_edit_eccentricity.text()
@@ -560,12 +563,13 @@ class GeneralWindow(QMainWindow):
         eccentricity = float(text)
         self._section.eccentricity = eccentricity
         self.draw_date_and_results()
+        return None
 
     def layout_edit_n(self, layout: QVBoxLayout):
         layout_edit_top = QHBoxLayout()
         layout_edit_n = QHBoxLayout()
         label_for = QLabel(MenuNames.label_n_for)
-        self.line_edit_n.editingFinished.connect(self.change_n)
+        self.line_edit_n.textChanged.connect(self.change_n)
         self.line_edit_n.setFixedWidth(Menus.width_line_edit)
         label_top = QLabel(MenuNames.label_n_top)
         layout_edit_top.addWidget(label_top)
@@ -585,6 +589,7 @@ class GeneralWindow(QMainWindow):
         n = abs(int(text))
         self._section.n = n
         self.draw_date_and_results()
+        return None
 
     def radiobutton_concrete(self, layout: QVBoxLayout):
         label_concrete = QLabel(MenuNames.concrete_diagram)
@@ -1383,7 +1388,8 @@ class GeneralWindow(QMainWindow):
         # draw strain
         e_top = result.e_top
         e_bottom = result.e_bottom
-        self.draw_strains_for_section_canvas(x0_y0=x0_y0_z, e_top=e_top, e_bottom=e_bottom)
+        with_plate = True if (result.moment > self._section.addition_concrete.h and self._section.addition_concrete.calculate_with_top_plate) else False
+        self.draw_strains_for_section_canvas(x0_y0=x0_y0_z, e_top=e_top, e_bottom=e_bottom, with_plate=with_plate)
         if self._section.addition_concrete.calculate_with_top_plate:
             self.draw_strains_for_additional_plate(x0_y0=x0_y0_z, e_top=result.e_top_add_plate,
                                                    e_bottom=result.e_bottom_add_plate)
@@ -1407,12 +1413,13 @@ class GeneralWindow(QMainWindow):
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
         text_bottom = str(round(e_bottom, 5))
-        self.painter_section.drawText(x0, y0 + 12, text_bottom)
+        #self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
         text_top = str(round(e_top, 5))
         self.painter_section.drawText(x1, y1 - 5, text_top)
 
-    def draw_strains_for_section_canvas(self, x0_y0: list[float], e_top: float, e_bottom: float) -> None:
+    def draw_strains_for_section_canvas(self, x0_y0: list[float], e_top: float, e_bottom: float,
+                                        with_plate: bool=False) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_section.setPen(pen)
@@ -1426,17 +1433,17 @@ class GeneralWindow(QMainWindow):
         y0 = int(x0_y0[1])
         # coordinates above
         x1 = int(x0_y0[0] + e_top * scale_x)
-        if self._section.addition_concrete.calculate_with_top_plate:
+        if with_plate:
             y1 = int(x0_y0[1] - (y_max + self._section.addition_concrete.h) * scale_y)
         else:
             y1 = int(x0_y0[1] - y_max * scale_y)
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
         text_bottom = str(round(e_bottom, 5))
-        self.painter_section.drawText(x0, y0 + 12, text_bottom)
+        #self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
         text_top = str(round(e_top, 5))
-        self.painter_section.drawText(x1, y1 - 5, text_top)
+        #self.painter_section.drawText(x1, y1 - 5, text_top)
 
     def draw_strains_for_diagram_canvas(self, result: Result):
         self.draw_concrete_strain_and_stress_for_diagram_canvas(result=result)
