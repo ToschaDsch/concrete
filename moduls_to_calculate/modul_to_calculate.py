@@ -340,7 +340,7 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
 
     moment = normal_force_0 * e0 + moment_1 + moment_carbon + moment_add_plate # moment from the external normal
     normal_force = normal_force_1 + normal_force_carbon + normal_force_add_plate    # force kNm
-    dn = normal_force_1  + normal_force_0 + normal_force_carbon  # external normal force
+    dn = normal_force_1  + normal_force_0 + normal_force_carbon + normal_force_add_plate # external normal force
     if len(graphic_concrete_2) > 0:
         graphic_concrete_1.append(graphic_concrete_2[0])
 
@@ -423,6 +423,7 @@ def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calcu
         normal_force_steel_2, moment_steel_2, graphic_steel_2, _, _ = result_steel
         normal_force_add_plate = normal_force_concrete_2 + normal_force_steel_2
         moment_add_plate = moment_concrete_2 + moment_steel_2
+        print("*************", moment_concrete_2, moment_steel_2)
     else:
         normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0.005,0.005
         graphic_concrete_2, graphic_steel_2 = [], []
