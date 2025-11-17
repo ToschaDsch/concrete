@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from PySide6 import QtGui
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 
@@ -83,6 +84,7 @@ class PenThicknessToDraw:
 
 @dataclass
 class MyColors:
+    background = QtGui.QColor(230, 230, 230)
     carbon = QColor(0, 130, 130)
     carbon_stress = QColor(0, 180, 180)
     concrete = QColor(150, 150, 150)
@@ -94,7 +96,7 @@ class MyColors:
     normal_force = QColor(100, 200, 0)
     axis = QColor(100, 100, 100)
     addition_lines = QColor(100, 100, 100)
-    strains_section = QColor(200, 200, 200)
+    strains_section = QColor(100, 100, 100)
     label_slider_lines = QColor(100, 250, 0)
     label_slider_background = Qt.GlobalColor.lightGray
     steel_additional_plate = QColor(250, 150, 150)

@@ -325,7 +325,7 @@ class GeneralWindow(QMainWindow):
 
     def calculate_with_top_plate(self, check: bool):
         self._section.addition_concrete.calculate_with_top_plate = bool(check)
-
+        print("calculate_with_top_plate", check, self._section.addition_concrete.calculate_with_top_plate)
         self.table_additional_concrete.setEnabled(check)
         self.combobox_addition_concrete.setEnabled(check)
         self.line_edit_b.setEnabled(check)
@@ -885,11 +885,11 @@ class GeneralWindow(QMainWindow):
         # clear all
         # canvas section
         self.canvas_section = self.label_section_canvas.pixmap()
-        self.canvas_section.fill(Qt.GlobalColor.black)
+        self.canvas_section.fill(MyColors.background)
         self.painter_section = QtGui.QPainter(self.canvas_section)
         # canvas diagram
         self.canvas_diagram = self.label_diagram_canvas.pixmap()
-        self.canvas_diagram.fill(Qt.GlobalColor.black)
+        self.canvas_diagram.fill(MyColors.background)
         self.painter_diagram = QtGui.QPainter(self.canvas_diagram)
 
         # draw section
@@ -931,7 +931,11 @@ class GeneralWindow(QMainWindow):
         # diagrams for concrete
         y = variables_the_program.Menus.h_top / 2
         name_axes = Names.axes_concrete
-        list_of_diagrams = [self._section.get_graph_for_concrete()]
+        if self._section.addition_concrete.calculate_with_top_plate:
+            list_of_diagrams = [self._section.get_graph_for_concrete(),
+                                self._section.get_graph_for_addition_plate_concrete()]
+        else:
+            list_of_diagrams = [self._section.get_graph_for_concrete()]
         max_values = self._section.max_x_y_for_concrete
         scale_x_y = get_scale_x_y_for_diagram(max_values=max_values, board=board)
         self.draw_list_of_diagram_on_the_canvas(board=board, y0=y, name_axes=name_axes,
@@ -1413,10 +1417,10 @@ class GeneralWindow(QMainWindow):
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
         text_bottom = str(round(e_bottom, 5))
-        #self.painter_section.drawText(x0, y0 + 12, text_bottom)
+        self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
         text_top = str(round(e_top, 5))
-        self.painter_section.drawText(x1, y1 - 5, text_top)
+        self.painter_section.drawText(x1 - 50, y1 - 5, text_top)
 
     def draw_strains_for_section_canvas(self, x0_y0: list[float], e_top: float, e_bottom: float,
                                         with_plate: bool=False) -> None:
@@ -1440,10 +1444,10 @@ class GeneralWindow(QMainWindow):
         self.painter_section.drawLine(x0, y0, x1, y1)
         # text at the bottom
         text_bottom = str(round(e_bottom, 5))
-        #self.painter_section.drawText(x0, y0 + 12, text_bottom)
+        self.painter_section.drawText(x0, y0 + 12, text_bottom)
         # text at the top
         text_top = str(round(e_top, 5))
-        #self.painter_section.drawText(x1, y1 - 5, text_top)
+        self.painter_section.drawText(x1, y1 - 5, text_top)
 
     def draw_strains_for_diagram_canvas(self, result: Result):
         self.draw_concrete_strain_and_stress_for_diagram_canvas(result=result)

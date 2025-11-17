@@ -25,6 +25,7 @@ class AllElementsOfTheSection:
         self._type_of_diagram_steel = 0
         self.type_of_diagram_concrete = 0
         self._concrete_color_rgba = MyColors.concrete_diagram
+        self._additional_plate_color_rgba = MyColors.concrete_addition
         self._n = n  # the smallest part will be divided into n elements
         self._normal_force = normal_force  # + compression - tension
         self._dn = dn
@@ -274,6 +275,12 @@ class AllElementsOfTheSection:
                          n=AllElementsOfTheSection.n_points_for_graph,
                          typ_of_diagram=self.type_of_diagram_concrete,
                          color=self._concrete_color_rgba)
+
+    def get_graph_for_addition_plate_concrete(self) -> DiagramToDraw:
+        return get_graph(diagram=self.addition_concrete.section.concrete,
+                         n=AllElementsOfTheSection.n_points_for_graph,
+                         typ_of_diagram=self.type_of_diagram_concrete,
+                         color=self._additional_plate_color_rgba)
 
     def get_graph_for_steel(self) -> list[DiagramToDraw]:
         list_of_graph = []

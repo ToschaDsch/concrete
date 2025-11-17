@@ -65,7 +65,7 @@ class AdditionConcrete:
         self.type_of_diagram_concrete = 0
         self._h = h
         self._b = b
-        self.section = AConcreteSection(bo=self.b, bu=self.b, h=self.h, concrete_class=self.concrete_class)
+        self.section = AConcreteSection(bo=self.b, bu=self.b, h=self.h, concrete_class=self._concrete_class)
         self.steel = SteelForAdditionPlate()
         self.m_int = 0
 
@@ -115,3 +115,4 @@ class AdditionConcrete:
     def concrete_class(self, new_class: str):
         self._concrete_class = new_class
         self._concrete_diagram = DiagramConcrete(concrete_class=new_class)
+        self.section.concrete = new_class

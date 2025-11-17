@@ -347,7 +347,11 @@ def get_m_n_from_eu_eo(e_top: float, e_bottom: float, h: float,
     graphic_steel = graphic_steel_1 + graphic_steel_2
 
     # strain is positive kN
-    sc = concrete_diagram.get_stress(ec=e_top,
+    if e_top_i_add_plate:
+        sc = additional_plate.section.concrete.get_stress(ec=e_top_i_add_plate,
+                                                            typ_of_diagram=type_of_diagram_concrete)
+    else:
+        sc = concrete_diagram.get_stress(ec=e_top,
                                      typ_of_diagram=type_of_diagram_concrete)
 
     graphic = GeneralGraphicForResult(graphic_for_concrete=graphic_concrete_1,
@@ -423,9 +427,8 @@ def calculate_an_additional_plate(e_top: float, e_bottom: float, h: float, calcu
         normal_force_steel_2, moment_steel_2, graphic_steel_2, _, _ = result_steel
         normal_force_add_plate = normal_force_concrete_2 + normal_force_steel_2
         moment_add_plate = moment_concrete_2 + moment_steel_2
-        print("*************", moment_concrete_2, moment_steel_2)
     else:
-        normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0.005,0.005
+        normal_force_add_plate, moment_add_plate, e_bottom_i, e_top_i = 0,0,0,0
         graphic_concrete_2, graphic_steel_2 = [], []
     return normal_force_add_plate, moment_add_plate, graphic_concrete_2, graphic_steel_2, e_bottom_i, e_top_i
 
