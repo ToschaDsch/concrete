@@ -1453,7 +1453,20 @@ class GeneralWindow(QMainWindow):
         self.draw_concrete_strain_and_stress_for_diagram_canvas(result=result)
         self.draw_steel_strain_and_stress_for_diagram_canvas(result=result)
 
-    def draw_concrete_strain_and_stress_for_diagram_canvas(self, result: Result):
+
+    def draw_concrete_strain_and_stress_for_diagram_canvas(self, result: Result) -> None:
+        ec = result.e_top
+        sc = result.sc_general_section
+        self.draw_concrete_i_strain_and_stress(ec=ec, sc=sc)
+        print(MenuNames.stress_concrete)
+        print(f"{MenuNames.general_section}, {MenuNames.sigma_c} = {round(sc, 5)}")
+        if self._section.addition_concrete.calculate_with_top_plate:
+            ec = result.e_top_add_plate
+            sc = result.sc_addition_plate
+            self.draw_concrete_i_strain_and_stress(ec=ec, sc=sc)
+            print(f"{MenuNames.addition_plate}, {MenuNames.sigma_c} = {round(sc, 5)}")
+
+    def draw_concrete_i_strain_and_stress(self, ec: float, sc: float) -> None:
         # brush and pen
         pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.graph_diagram)
         self.painter_diagram.setPen(pen)
@@ -1466,8 +1479,6 @@ class GeneralWindow(QMainWindow):
         scale_x_y = get_scale_x_y_for_diagram(max_values=max_values, board=board)
         x_ = board
         y_ = y - board
-        ec = result.e_top
-        sc = result.sc
         r = Menus.radius_for_diagram_strain_circles
         x = int(x_ + ec * scale_x_y[0])
         y = int(y_ - sc * scale_x_y[1])

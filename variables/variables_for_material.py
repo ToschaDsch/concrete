@@ -84,15 +84,18 @@ class GeneralGraphicForResult:
 
 
 class Result:
-    def __init__(self, normal_force: float, moment: float, graph: GeneralGraphicForResult, e_top: float, e_bottom: float,
-                 dn: float, sc: float, e_top_add_plate: float=0, e_bottom_add_plate: float=0):
+    def __init__(self, normal_force: float, moment: float, graph: GeneralGraphicForResult,
+                 e_top: float, e_bottom: float,
+                 dn: float, sc_general_section: float, sc_addition_plate: float=0,
+                 e_top_add_plate: float=0, e_bottom_add_plate: float=0):
         self.normal_force = normal_force  # normal force
         self.moment = moment  # moment
         self.graph: GeneralGraphicForResult = graph
         self.e_top = e_top  # relative deformation
         self.e_bottom = e_bottom
         self.dn = dn
-        self.sc = sc
+        self.sc_general_section = sc_general_section    #sigma concrete
+        self.sc_addition_plate = sc_addition_plate
         self.e_top_add_plate = e_top_add_plate
         self.e_bottom_add_plate = e_bottom_add_plate
 

@@ -127,6 +127,10 @@ class MenuNames:
     strengthening_carbon = "Verstärkung mit carbon unten"
     b_is = 'b = , cm'    # for addition plate
     h_is = 'h = , cm'    # for addition plate
+    stress_concrete = '**************** Betonstress ****************'
+    general_section = 'Hauptquerschnitt'
+    addition_plate = 'Aufbeton'
+    sigma_c = "σc = "
 
 @dataclass
 class Names:

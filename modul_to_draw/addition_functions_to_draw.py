@@ -28,8 +28,8 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
                 graph_2: ResultGraphConcrete = result_2.graph.graphic_for_concrete[j][i]
                 ec = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.ec, r2=graph_2.ec)
                 yi = graph_1.yi
-                sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.sc, r2=graph_2.sc)
-                graph_for_one_element_i.append(ResultGraphConcrete(ec=ec, yi=yi, sc=sc))
+                sc_general_section = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=graph_1.sc, r2=graph_2.sc)
+                graph_for_one_element_i.append(ResultGraphConcrete(ec=ec, yi=yi, sc=sc_general_section))
             graphic_for_concrete.append(graph_for_one_element_i)
 
     # intermediate graphic for steel
@@ -56,10 +56,14 @@ def make_intermediate_result_for_the_graphic(mi, result_1: Result,
     e_top = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top, r2=result_2.e_top)
     e_bottom = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom, r2=result_2.e_bottom)
     dn = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.dn, r2=result_2.dn)
-    sc = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.sc, r2=result_2.sc)
+    sc_general_section = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.sc_general_section,
+                                               r2=result_2.sc_general_section)
+    sc_addition_plate = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.sc_addition_plate,
+                                               r2=result_2.sc_addition_plate)
     e_top_add_plate = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_top_add_plate, r2=result_2.e_top_add_plate)
     e_bottom_add_plate = interpolate_for_graph(mi=mi, m1=m1, m2=m2, r1=result_1.e_bottom_add_plate, r2=result_2.e_bottom_add_plate)
-    result = Result(normal_force=normal_force, moment=mi, graph=graphic, e_top=e_top, e_bottom=e_bottom, dn=dn, sc=sc,
+    result = Result(normal_force=normal_force, moment=mi, graph=graphic, e_top=e_top, e_bottom=e_bottom, dn=dn,
+                    sc_general_section=sc_general_section, sc_addition_plate=sc_addition_plate,
                     e_top_add_plate=e_top_add_plate, e_bottom_add_plate=e_bottom_add_plate)
     return result
 
