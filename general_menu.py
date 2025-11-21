@@ -1485,12 +1485,13 @@ class GeneralWindow(QMainWindow):
         self.painter_diagram.drawEllipse(x - r, y - r, 2 * r, 2 * r)
 
     def draw_steel_strain_and_stress_for_diagram_canvas(self, result: Result):
-        for graph in result.graph.graphic_for_steel:
-            self.draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(graph=graph)
+        for i, graph in enumerate(result.graph.graphic_for_steel):
+            self.draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(graph=graph, name=str(i))
         if self._section.carbon.calculate_with_carbon:
-            self.draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(graph=result.graph.graphic_for_carbon)
+            self.draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(graph=result.graph.graphic_for_carbon,
+                                                                                name="carbon")
 
-    def draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(self, graph: ResultGraphSteel):
+    def draw_concrete_strain_and_stress_for_diagram_canvas_for_a_steel(self, graph: ResultGraphSteel, name: str=None):
         # brush and pen
         if graph is None:
             return None
@@ -1511,6 +1512,7 @@ class GeneralWindow(QMainWindow):
         x = int(x_ + ec * scale_x_y[0])
         y = int(y_ - sc * scale_x_y[1])
         self.painter_diagram.drawEllipse(x - r, y - r, 2 * r, 2 * r)
+        print(f"s_{name} = {round(sc, 5)}")
         return None
 
     def make_scales_for_stress(self) -> tuple[tuple[float, float | None], tuple[float, float | None]]:
