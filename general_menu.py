@@ -25,6 +25,9 @@ from variables.variables_for_material import MaterialVariables, ResultGraphConcr
 class GeneralWindow(QMainWindow):
     def __init__(self, *args):
         super(GeneralWindow, self).__init__()
+        pixmap = QtGui.QPixmap(Menus.icon)
+        app_icon = QtGui.QIcon(pixmap)
+        self.setWindowIcon(app_icon)
 
         self.setWindowTitle(Menus.name_of_the_program)
 
@@ -1322,6 +1325,7 @@ class GeneralWindow(QMainWindow):
             partial(self.change_index_of_combobox_steel, row_number_in_list))
         self.table_steel.setCellWidget(row_number, 5, self.list_of_combobox_steel[-1])
         Menus.table_insert = False
+        self.button_minus_steel.setEnabled(True)
         self.draw_date_and_results()
 
     def change_index_of_combobox_steel(self, row_number: int, index: int):

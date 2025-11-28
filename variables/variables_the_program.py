@@ -16,6 +16,7 @@ class Menus:
     file_name_extension: str = 'sec'
     screen_width: int = 100
     screen_height: int = 100
+    icon: str = './/icons//icon.png'
 
     font_height: int = 15
 
