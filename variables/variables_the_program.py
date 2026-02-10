@@ -132,6 +132,8 @@ class MenuNames:
     general_section = 'Hauptquerschnitt'
     addition_plate = 'Aufbeton'
     sigma_c = "σc = "
+    calculation =                     "Berechnung   --->>>    "
+    calculation_with_addition_plate = "Berechnung mit Aufbeton"
 
 @dataclass
 class Names:

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from ssl import DER_cert_to_PEM_cert
+from rich.progress import track
 from typing import Any
 
 from moduls_to_calculate.carbon_values import CarbonSegment
@@ -7,7 +7,7 @@ from moduls_to_calculate.classes_for_additional_plate import AdditionConcrete
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 from moduls_to_calculate.diagram import DiagramConcrete
 from variables.variables_for_material import Result, GeneralGraphicForResult, ResultGraphSteel
-from variables.variables_the_program import Menus
+from variables.variables_the_program import Menus, MenuNames
 
 
 class NoneResult:
@@ -140,8 +140,8 @@ def normal_calculation(n_de: int, e_top_max: float, e_bottom_max: float, h: floa
             n_0 = 0     #2*int(0.8*e_top_reinforcement/e_top_max*n_de) # not calculate from null
         else:
             n_0 = 0
-
-    for i in range(n_0, n_de):
+    description = MenuNames.calculation if calculate_date.calculate_with_additional_plate is False else MenuNames.calculation_with_addition_plate
+    for i in track(range(n_0, n_de), description=description):
         e_top_i = e_top_max * i / n_de
         result_i = find_eo_and_get_result(e_top_i=e_top_i, e_bottom_max=e_bottom_max, h=h, y_min=y_min,
                                           calculate_date=calculate_date, n_de=n_de)
@@ -452,7 +452,6 @@ def find_precise_result_between_two_results(result_1: Result, result_2: Result, 
     dn_1 = result_1.dn
     dn_2 = result_2.dn
     if dn_1 - dn_2 == 0:
-        print("can't find", result_1)
         return None
     else:
         e_bottom = (eu_2 - eu_1) / (dn_1 - dn_2) * dn_1 + eu_1
@@ -472,7 +471,6 @@ def find_precise_result_between_two_results(result_1: Result, result_2: Result, 
     if isinstance(result, NoneResult) or recursion == Menus.max_recursion:
         if recursion == Menus.max_recursion:
             result = "recursion"
-        print("can't find", result)
         return None
 
     if abs(result.dn) < calculate_date.dn_max:
@@ -543,7 +541,6 @@ def find_e_bottom_for_e_top_get_result(preliminary_list_eo_eu: list[list[float]]
                                         additional_plate=calculate_date.additional_plate)
         n += 1
         if isinstance(result_i, NoneResult):
-            #print('primary', result_i, n)
             continue
         list_or_preliminary_results.append(result_i)
 

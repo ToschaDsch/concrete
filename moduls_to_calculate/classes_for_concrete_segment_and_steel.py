@@ -195,7 +195,6 @@ class ASteelLine(ElementOfSection):
         es = get_ei_from_eo_eu_yi_h(e_top=e_top, e_bottom=e_bottom, yi=self._y, h=h) - self._e0 - self.e_init - self.e_init_add_plate  # e0 - prestress
         ss = self._steel.get_stress(ec=es, typ_of_diagram=type_of_diagram)
         if ss is None:
-            print('steel stress is None', 'e_top = ', e_top, 'e_bottom = ', e_bottom)
             return None
 
         normal_force = self._area * (ss + self._s0) / 1000  # kN (area mm, ss N/mm2)
@@ -221,6 +220,13 @@ class ASteelLine(ElementOfSection):
         self._e0 = self._steel.get_e_from_s(typ_of_diagram=type_of_diagram, s=s0)
         self._area = math.pi * (self._d * 0.5) ** 2 * self._m * self._n  # mm2
 
+    @property
+    def y(self) -> float:
+        return self._y
+
+    @y.setter
+    def y(self, value: float):
+        self._y = value
 
     @property
     def steel(self):

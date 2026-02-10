@@ -87,7 +87,7 @@ def get_scale_x_y_for_diagram(board: float, max_values: tuple[float, float]) -> 
 
 
 def make_polygon_to_draw_concrete(graph_concrete: list[ResultGraphConcrete],
-                                  scale_concrete: list[float], x0_y0: list[float]) -> QPolygonF:
+                                  scale_concrete: tuple[float, float], x0_y0: tuple[float, float]) -> QPolygonF:
     polygon = QPolygonF()
     flag = 0  # first element with s > 0
     n = len(graph_concrete) - 1
@@ -119,8 +119,8 @@ def make_polygon_to_draw_concrete(graph_concrete: list[ResultGraphConcrete],
     return polygon
 
 
-def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_steel: tuple[float],
-                       x0_y0: list[float]):
+def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_steel: tuple[float, float],
+                       x0_y0: tuple[float, float]):
     if graph_steel is None:
         return None
     yi = graph_steel.yi
@@ -139,7 +139,7 @@ def draw_a_graph_steel(painter_section, graph_steel: ResultGraphSteel, scale_ste
 
 
 def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],
-                              scale_concrete: list[float], x0_y0: list[float]):
+                              scale_concrete: tuple[float, float], x0_y0: tuple[float, float]):
     polygon = make_polygon_to_draw_concrete(graph_concrete=graph_concrete,
                                             scale_concrete=scale_concrete, x0_y0=x0_y0)
     pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)
@@ -150,7 +150,7 @@ def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],
 
 
 def draw_lines_above_concrete_diagram(painter_section, graph_concrete: list[ResultGraphConcrete],
-                                      scale_concrete: list[float], x0_y0: list[float]):
+                                      scale_concrete: tuple[float, float], x0_y0: tuple[float, float]):
     pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)
     painter_section.setPen(pen)
     brush = QtGui.QBrush(MyColors.concrete_diagram)

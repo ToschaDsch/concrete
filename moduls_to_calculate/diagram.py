@@ -116,7 +116,6 @@ class DiagramSteel(Diagram):
                 case 1:  # 1 linear plastic
                     return ((ec - self._e0) / (self._eud - self._e0) * (self._fdk - self._fd) + self._fd) * sign
         else:
-            print('ec = ', ec, self._eud)
             return None
 
     def get_e_from_s(self, s: float, typ_of_diagram: int = 0) -> float | None:

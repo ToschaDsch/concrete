@@ -93,7 +93,7 @@ class GeneralWindow(QMainWindow):
         # central horizontal layout
         self.label_current_moment_m_i = QLabel('0')  # current moment
         self.label_current_normal_force_n_i = QLabel('0')  # current normal force
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setFixedWidth(Menus.sliders_width)
         self.label_for_slider = QLabel()
         b = Menus.sliders_width
@@ -215,7 +215,7 @@ class GeneralWindow(QMainWindow):
             combobox_steel.addItem(steel_name_i)
         index = MaterialVariables.steel_for_concrete.index(steel_name)
         combobox_steel.setCurrentIndex(index)
-        row_number_in_list = 0
+
         combobox_steel.currentIndexChanged.connect(self.change_index_of_combobox_addition_steel)
         self.table_additional_concrete.setCellWidget(0, 1, combobox_steel)
         # z, cm
@@ -232,19 +232,14 @@ class GeneralWindow(QMainWindow):
         if text == '' or text == '.' or text == '-.':
             return False
         j = item.column()
-        t = float(text)
-        try:
-            match j:
-                case 0: # area
-                    self._section.addition_concrete.steel.area = float(t)
-                case 2: #z
-                    self._section.addition_concrete.steel.z = float(t)
-                case 3:
-                    self._section.addition_concrete.m_int = float(t)
-        except Exception as inst:
-            print(type(inst))
-            return None
-        self.draw_date_and_results()
+        t = correct_a_string(string=text, only_positive=True)
+        match j:
+            case 0: # area
+                self._section.addition_concrete.steel.area = t
+            case 2: #z
+                self._section.addition_concrete.steel.z = t
+            case 3:
+                self._section.addition_concrete.m_int = t
         return None
 
     def change_index_of_combobox_addition_steel(self, new_index):
@@ -254,24 +249,15 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
 
     def text_changed_b_addition_plate(self, new_text: str):
-        try:
-            b = float(new_text)
-            self._section.addition_concrete.b = b
-            print(b)
-            self.draw_all()
-        except Exception as inst:
-            print(type(inst), new_text)
-            return None
+        b = correct_a_string(string=new_text, only_positive=True)
+        self._section.addition_concrete.b = b
+        self.draw_all()
 
     def text_changed_h_addition_plate(self, new_text: str):
-        try:
-            h = float(new_text)
-            self._section.addition_concrete.h = h
-            print(h)
-            self.draw_all()
-        except Exception as inst:
-            print(type(inst), new_text)
-            return None
+        h = correct_a_string(string=new_text, only_positive=True)
+        self._section.addition_concrete.h = h
+        self.draw_all()
+
 
     def load_carbon_strengthening(self, extra_layout: QHBoxLayout):
         layout_carbon_strengthening = QVBoxLayout()
@@ -304,7 +290,7 @@ class GeneralWindow(QMainWindow):
             combobox_carbon.addItem(carbon_name_i)
         index = MaterialVariables.carbon_class.index(carbon_name)
         combobox_carbon.setCurrentIndex(index)
-        row_number_in_list = 0
+
         combobox_carbon.currentIndexChanged.connect(self.change_index_of_combobox_carbon)
         self.table_carbon.setCellWidget(0, 1, combobox_carbon)
         # z, cm
@@ -328,7 +314,6 @@ class GeneralWindow(QMainWindow):
 
     def calculate_with_top_plate(self, check: bool):
         self._section.addition_concrete.calculate_with_top_plate = bool(check)
-        print("calculate_with_top_plate", check, self._section.addition_concrete.calculate_with_top_plate)
         self.table_additional_concrete.setEnabled(check)
         self.combobox_addition_concrete.setEnabled(check)
         self.line_edit_b.setEnabled(check)
@@ -350,18 +335,14 @@ class GeneralWindow(QMainWindow):
         if text == '' or text == '.' or text == '-.':
             return False
         j = item.column()
-        t = float(text)
-        try:
-            match j:
-                case 0:
-                    self._section.carbon.area = float(t)
-                case 2:
-                    self._section.carbon.z = float(t)
-                case 3:
-                    self._section.carbon.m_int = float(t)
-        except Exception as inst:
-            print(type(inst))
-            return None
+        t = correct_a_string(string=text, only_positive=True)
+        match j:
+            case 0:
+                self._section.carbon.area = t
+            case 2:
+                self._section.carbon.z = t
+            case 3:
+                self._section.carbon.m_int = t
         self.draw_date_and_results()
         return None
 
@@ -532,7 +513,9 @@ class GeneralWindow(QMainWindow):
         text = self.line_edit_dn.text()
         if text == '' or text == '.' or text == '-.' or text == '0':
             return False
-        dn = abs(float(text))
+        dn = correct_a_string(string=text, only_positive=True)
+        if dn:
+            self.line_edit_dn.setText(str(dn))
         self._section.dn = dn
         self._section.is_calculated = False
         self.draw_date_and_results()
@@ -542,7 +525,7 @@ class GeneralWindow(QMainWindow):
         text = self.line_edit_n_de.text()
         if text == '' or text == '.' or text == '-.' or text == '0':
             return False
-        n_de = abs(float(text))
+        n_de = correct_a_string(string=text, only_positive=True, int_=True)
         self._section.n_de = n_de
         self._section.is_calculated = False
         self.draw_date_and_results()
@@ -553,7 +536,7 @@ class GeneralWindow(QMainWindow):
         text = text.replace(',', '.')
         if text == '' or text == '.' or text == '-.':
             return False
-        normal_force = float(text)
+        normal_force = correct_a_string(string=text)
         self._section.normal_force = normal_force
         self.draw_date_and_results()
         return None
@@ -563,7 +546,7 @@ class GeneralWindow(QMainWindow):
         text = text.replace(',', '.')
         if text == '' or text == '.' or text == '-.':
             return False
-        eccentricity = float(text)
+        eccentricity = correct_a_string(string=text)
         self._section.eccentricity = eccentricity
         self.draw_date_and_results()
         return None
@@ -589,7 +572,7 @@ class GeneralWindow(QMainWindow):
         text = self.line_edit_n.text()
         if text == '' or text == '.' or text == '-.':
             return False
-        n = abs(int(text))
+        n = correct_a_string(string=text, only_positive=True, int_=True)
         self._section.n = n
         self.draw_date_and_results()
         return None
@@ -691,7 +674,7 @@ class GeneralWindow(QMainWindow):
         row = item.row()
         i = len(self._section.list_of_concrete_sections) - 1 - row
         j = item.column()
-        t = float(text)
+        t = correct_a_string(string=text, only_positive=True)
         section = self._section.list_of_concrete_sections[i]
         bo, bu, y0, h = section.get_bo_bu_y0_h()
         match j:
@@ -718,7 +701,7 @@ class GeneralWindow(QMainWindow):
         i = item.row()
         j = item.column()
         text = text.replace(',', '.')
-        t = float(text) if j != 5 else text
+        t = correct_a_string(string=text, only_positive=True) if j != 5 else text
         n_section = len(self._section.list_of_steel) - 1 - i
         steel_line = self._section.list_of_steel[n_section]
         d, y, n, m, steel, s0 = steel_line.get_d_y_n_m_steel_s0()
@@ -728,9 +711,9 @@ class GeneralWindow(QMainWindow):
             case 1:
                 d = t
             case 2:
-                m = t
+                m = int(t)
             case 3:
-                n = t
+                n = int(t)
             case 4:
                 y = t
             case 6:
@@ -739,6 +722,7 @@ class GeneralWindow(QMainWindow):
         steel_line.new_d_y_n_m_steel_s0(d=d, y=y, n=n, m=m, steel=steel, s0=s0,
                                         type_of_diagram=self._section.type_of_diagram_steel)
         self.draw_date_and_results()
+        return None
 
     def selection_changed_concrete(self):
         list_of_selected_items = self.table_concrete.selectedIndexes()
@@ -1072,7 +1056,7 @@ class GeneralWindow(QMainWindow):
         # draw the steel
         steel = self._section.addition_concrete.steel
         y0 = get_y0(section=self._section, scale=scale)
-        y = y0 - (self._section.addition_concrete.steel.steel_line._y + z) * scale
+        y = y0 - (self._section.addition_concrete.steel.steel_line.y + z) * scale
         self.draw_carbon_or_a_line_of_steel(y=y, area=steel.area, color=steel.color, scale=scale)
 
     def draw_normal_force(self, scale: float, z):
@@ -1375,7 +1359,7 @@ class GeneralWindow(QMainWindow):
         else:
             z = 0
         x0_y0 = [Menus.b_left_side * 0.5, get_y0(section=self._section, scale=scale_concrete[1])]
-        x0_y0_z = [x0_y0[0], x0_y0[1] - z * scale_concrete[1]]
+        x0_y0_z = x0_y0[0], x0_y0[1] - z * scale_concrete[1]
 
         # draw concrete
         for graph_concrete in graph.graphic_for_concrete:
@@ -1403,7 +1387,7 @@ class GeneralWindow(QMainWindow):
                                                    e_bottom=result.e_bottom_add_plate)
         self.draw_strains_for_diagram_canvas(result=result)
 
-    def draw_strains_for_additional_plate(self, x0_y0: list[float], e_top: float, e_bottom: float) -> None:
+    def draw_strains_for_additional_plate(self, x0_y0: tuple[float, float], e_top: float, e_bottom: float) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         self.painter_section.setPen(pen)
@@ -1426,7 +1410,7 @@ class GeneralWindow(QMainWindow):
         text_top = str(round(e_top, 5))
         self.painter_section.drawText(x1 - 50, y1 - 5, text_top)
 
-    def draw_strains_for_section_canvas(self, x0_y0: list[float], e_top: float, e_bottom: float,
+    def draw_strains_for_section_canvas(self, x0_y0: tuple[float, float], e_top: float, e_bottom: float,
                                         with_plate: bool=False) -> None:
         pen = QtGui.QPen(MyColors.strains_section, PenThicknessToDraw.strains_section)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
@@ -1528,15 +1512,15 @@ class GeneralWindow(QMainWindow):
         scale_fo_steel = b_c / max_values_steel * Menus.scale_canvas_section * 0.5, y_scale
         return scale_for_concrete, scale_fo_steel
 
-    def draw_a_graph_concrete(self, graph_concrete: list[ResultGraphConcrete], scale_concrete: tuple[float],
-                              x0_y0: list[float]):
+    def draw_a_graph_concrete(self, graph_concrete: list[ResultGraphConcrete], scale_concrete: tuple[float, float],
+                              x0_y0: tuple[float, float]):
         self.draw_polygon_for_concrete(graph_concrete=graph_concrete,
                                        scale_concrete=scale_concrete, x0_y0=x0_y0)
         draw_lines_above_concrete_diagram(self.painter_section, graph_concrete=graph_concrete,
                                           scale_concrete=scale_concrete, x0_y0=x0_y0)
 
     def draw_polygon_for_concrete(self, graph_concrete: list[ResultGraphConcrete],
-                                  scale_concrete: list[float], x0_y0: list[float]):
+                                  scale_concrete: tuple[float, float], x0_y0: tuple[float, float]):
         polygon = make_polygon_to_draw_concrete(graph_concrete=graph_concrete,
                                                 scale_concrete=scale_concrete, x0_y0=x0_y0)
         pen = QtGui.QPen(MyColors.concrete_diagram, PenThicknessToDraw.stress_concrete)
@@ -1546,3 +1530,14 @@ class GeneralWindow(QMainWindow):
         self.draw_a_polygon(polygon=polygon, brush=brush)
 
 
+def correct_a_string(string: str, int_: bool=False, only_positive: bool=False) -> float:
+    string = string.replace(",", ".")
+    if only_positive:
+        string = string.replace("-", "")
+    fun = int if int_ else float
+    try:
+        return fun(string)
+
+    except Exception as inst:
+        print("Exception!", type(inst))
+        return 0.0
