@@ -35,6 +35,18 @@ class AllElementsOfTheSection:
         self._eccentricity = eccentricity
         self.carbon = CarbonSegment()
         self.addition_concrete = AdditionConcrete()
+        self._round_section = False
+        self.R: float = InitiationValues.R
+        self.r: float = InitiationValues.r
+        self.n_as_p: int = InitiationValues.n_as_p
+
+    @property
+    def round_section(self) -> bool:
+        return self._round_section
+
+    @round_section.setter
+    def round_section(self, value: bool) -> None:
+        self._round_section = value
 
     @property
     def eccentricity(self):

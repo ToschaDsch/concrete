@@ -33,13 +33,20 @@ def data_to_dict(section: AllElementsOfTheSection) -> dict:
     steel = steel_to_list(section=section)
     carbon = carbon_to_list(section=section)
     additional_plate = additional_plate_to_dict(section=section)
+    round_section = round_section_to_dict(section=section)
     other_variables = other_variables_to_dict(section=section)
     return {'concrete': concrete,
             'carbon': carbon,
             'steel': steel,
             'additional_plate': additional_plate,
+            'round_section': round_section,
             'other_variables': other_variables}
 
+def round_section_to_dict(section: AllElementsOfTheSection) -> dict:
+    return {'is_round': section.round_section,
+            "R": section.R,
+            "r": section.r,
+            "n_as_p": section.n_as_p}
 
 def concrete_to_list(section: AllElementsOfTheSection) -> list:
     list_of_all_sections = []

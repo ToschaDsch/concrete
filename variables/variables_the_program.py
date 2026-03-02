@@ -22,7 +22,7 @@ class Menus:
 
     table_insert: bool = False
 
-    b_left_side: int = 400
+    b_left_side: int = 450
     b_center: int = 400
     h_top: int = 400
     h_center: int = 150
@@ -69,6 +69,9 @@ class InitiationValues:
     # addition concrete
     h_add = 20
     b_add = 20
+    R = 200.0
+    r = 150.0
+    n_as_p = 10
 
 
 @dataclass
@@ -123,6 +126,7 @@ class MenuNames:
     n_de_info = 'Diagramme werden auf'
     explanation_normal_force = 'Zug ist positiv'
     label_concrete = "Beton"
+    round_section = "ringformiger Querschnitt"
     label_steel = "Bewehrung"
     strengthening_concrete = "Verstärkung mit Beton oben"
     strengthening_carbon = "Verstärkung mit carbon unten"

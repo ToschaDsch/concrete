@@ -24,6 +24,11 @@ def open_file(self) -> dict | bool:
             additional_plate: dict = json_data['additional_plate']
         else:
             additional_plate = {}
+        if 'round_section' in json_data:
+            round_section: dict = json_data['round_section']
+        else:
+            round_section = {}
+
     except TypeError:
         print('error by file opening')
         return False
@@ -31,9 +36,9 @@ def open_file(self) -> dict | bool:
             'list_of_steel': list_of_steel,
             'carbon': carbon,
             "additional_plate": additional_plate,
+            "round_section": round_section,
             'other_variables': dict_of_other_variables,
             }
-
 
 def transform_from_json_to_concrete(json_data) -> list[AConcreteSection]:
     new_list_of_concrete = []

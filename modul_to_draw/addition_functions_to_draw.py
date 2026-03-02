@@ -165,5 +165,8 @@ def draw_lines_above_concrete_diagram(painter_section, graph_concrete: list[Resu
 
 
 def get_y0(section: AllElementsOfTheSection, scale: float) -> float:
-    b, h = section.get_b_h_max()
+    if section.round_section:
+        h = 2*section.R
+    else:
+        b, h = section.get_b_h_max()
     return Menus.h_top/2 + h/2 * scale

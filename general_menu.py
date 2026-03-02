@@ -33,7 +33,6 @@ class GeneralWindow(QMainWindow):
 
         general_layout = QVBoxLayout()
 
-
         # variables to calculate
         self._section = AllElementsOfTheSection(concrete_class=MaterialVariables.concrete_class[3])
         self._m_max = 0  # max moment after the calculation
@@ -114,6 +113,10 @@ class GeneralWindow(QMainWindow):
         self.button_minus_concrete = QPushButton("-")
         self.table_concrete = QTableWidget()
         self.option_plate_top_bottom = QVBoxLayout()
+        self.checkbox_round_section = QCheckBox(MenuNames.round_section)
+        self.lineedit_R =QLineEdit(str(InitiationValues.R))
+        self.lineedit_r = QLineEdit(str(InitiationValues.r))
+        self.lineedit_nas_p = QLineEdit(str(InitiationValues.n_as_p))
         bottom_layout.addLayout(concrete_layout)
         self.load_layout_concrete(concrete_layout)
 
@@ -253,6 +256,28 @@ class GeneralWindow(QMainWindow):
         self._section.addition_concrete.b = b
         self.draw_all()
 
+    def text_changed_R(self, new_text: str):
+        b = correct_a_string(string=new_text, only_positive=True)
+        self._section.R = b
+        self.draw_all()
+
+    def text_changed_r(self, new_text: str):
+        b = correct_a_string(string=new_text, only_positive=True)
+        if self._section.R > b:
+            self._section.r = b
+        else:
+            r = self._section.R - 5
+            self._section.r = r
+            self.lineedit_r.setText(str(r))
+        self.draw_all()
+
+    def text_changed_n_as_p(self, new_text: str):
+        b = correct_a_string(string=new_text, only_positive=True, int_=True)
+        self._section.n_as_p = b
+        self.draw_all()
+        self._section.n_as_p = b
+        self.draw_all()
+
     def text_changed_h_addition_plate(self, new_text: str):
         h = correct_a_string(string=new_text, only_positive=True)
         self._section.addition_concrete.h = h
@@ -323,6 +348,38 @@ class GeneralWindow(QMainWindow):
         self._section.addition_concrete.section.y0 = h
         self.draw_all()
 
+
+    def round_section(self, check: bool):
+        if check:
+            value_1 = False
+            value_2 = True
+
+            R = self.lineedit_R.text()
+            r = self.lineedit_r.text()
+            nas_p = self.lineedit_nas_p.text()
+            self._section.round_section = True
+            self._section.R = correct_a_string(string=R, only_positive=True)
+            self._section.r = correct_a_string(string=r, only_positive=True)
+            self._section.n_as_p = correct_a_string(string=nas_p, only_positive=True, int_=True)
+        else:
+            value_1 = True
+            value_2 = False
+        self._section.round_section = check
+        self._section.addition_concrete.calculate_with_top_plate = False
+        self.checkbox_addition_top_plate.setChecked(False)
+        self.checkbox_addition_top_plate.setEnabled(value_1)
+        self._section.is_calculated = False
+        self._section.carbon.calculate_with_carbon = False
+        self.checkbox_carbon.setChecked(False)
+        self.checkbox_carbon.setEnabled(value_1)
+        self.table_concrete.setEnabled(value_1)
+
+        self.lineedit_R.setEnabled(value_2)
+        self.lineedit_r.setEnabled(value_2)
+        self.lineedit_nas_p.setEnabled(value_2)
+
+
+        self.draw_all()
 
     def selection_changed_carbon(self):
         pass
@@ -407,7 +464,15 @@ class GeneralWindow(QMainWindow):
             self.update_carbon(new_date['carbon'])
         if 'additional_plate' in new_date:
             self.update_additional_plate(new_date['additional_plate'])
+        if new_date['round_section']:
+            self.update_round_section(new_date['round_section'])
         return None
+
+    def update_round_section(self, data_round_section: dict):
+        self.checkbox_round_section.setChecked(data_round_section['is_round'])
+        self.lineedit_R.setText(str(data_round_section['R']))
+        self.lineedit_r.setText(str(data_round_section['r']))
+        self.lineedit_nas_p.setText(str(data_round_section['n_as_p']))
 
     def send_other_variables_by_file_open(self, other_variables: dict):
         # sent diagram
@@ -629,11 +694,37 @@ class GeneralWindow(QMainWindow):
             self.table_concrete.setColumnWidth(i, int(bi))
         self.table_concrete.itemChanged.connect(self.concrete_table_changed_item)
         self.table_concrete.itemSelectionChanged.connect(self.selection_changed_concrete)
-        concrete_layout.addWidget(self.table_concrete)
 
         default_element = self._section.list_of_concrete_sections[0]
         self.add_an_element_in_the_concrete_table(row_number=0, new_element=default_element)
         layout.addLayout(concrete_layout)
+
+        # round section
+        round_layout = QtWidgets.QVBoxLayout()
+        round_layout_1 = QtWidgets.QHBoxLayout()
+        round_layout_2 = QtWidgets.QHBoxLayout()
+        round_layout.addLayout(round_layout_1)
+        round_layout.addLayout(round_layout_2)
+        round_layout_1.addWidget(self.checkbox_round_section)
+        self.checkbox_round_section.stateChanged.connect(self.round_section)
+        round_layout_2.addWidget(QLabel("R ="))
+        round_layout_2.addWidget(self.lineedit_R)
+        for i in (self.lineedit_R, self.lineedit_r, self.lineedit_nas_p):
+            i.setFixedWidth(50)
+            i.setEnabled(False)
+        self.lineedit_R.textChanged.connect(self.text_changed_R)
+        self.lineedit_r.textChanged.connect(self.text_changed_r)
+        self.lineedit_nas_p.textChanged.connect(self.text_changed_n_as_p)
+        round_layout_2.addWidget(QLabel("cm"))
+        round_layout_2.addWidget(QLabel("r ="))
+        round_layout_2.addWidget(self.lineedit_r)
+        round_layout_2.addWidget(QLabel("cm"))
+        round_layout_2.addWidget(QLabel("nas-p ="))
+        round_layout_2.addWidget(self.lineedit_nas_p)
+        layout.addLayout(round_layout)
+
+        layout.addWidget(self.table_concrete)
+
 
     def load_layout_concrete_buttons_and_combobox(self, layout: QVBoxLayout):
         layout_buttons = QHBoxLayout()
@@ -691,9 +782,23 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
         return None
 
+    def scan_steel_for_round_section(self):
+        for row in range(self.table_steel.rowCount()):
+            for col in range(1,self.table_steel.columnCount()):
+                print(row, col)
+                item = self.table_steel.item(row, col)
+                if col != 5:
+                    text = item.text()
+                    t = correct_a_string(string=text, only_positive=True) if col != 5 else text
+                    print(t)
+
+
     def steel_table_changed_item(self, item) -> None | bool:
         """change a concrete section"""
         if Menus.table_insert:
+            return None
+        if self._section.round_section:
+            self.scan_steel_for_round_section()
             return None
         text = item.text()
         if text == '' or text == '.' or text == '-.':
@@ -773,7 +878,10 @@ class GeneralWindow(QMainWindow):
 
     def make_scale_for_section(self) -> float | None:
         """returns scale x , y"""
-        b, h = self._section.get_b_h_max()
+        if self._section.round_section:
+            b = h = 2*self._section.R
+        else:
+            b, h = self._section.get_b_h_max()
         if b <= 0 or h <= 0:
             return None
         if self._section.carbon.calculate_with_carbon:
@@ -1033,15 +1141,21 @@ class GeneralWindow(QMainWindow):
         pen = QtGui.QPen(MyColors.concrete_boards, PenThicknessToDraw.boards)
         self.painter_section.setPen(pen)
         brush = QtGui.QBrush(MyColors.concrete)
-        for section in self._section.list_of_concrete_sections:
-            self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
+        if self._section.round_section:
+            R = self._section.R
+            r = self._section.r
+            self.draw_round_concrete_section(R=R, r=r, scale=scale, brush=brush)
+        else:
+            for section in self._section.list_of_concrete_sections:
+                self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
+
         # draw y axe
         x0 = Menus.b_left_side * 0.5
         y0 = get_y0(section=self._section, scale=scale)
         y1 = Menus.h_top - y0
         pen = QtGui.QPen(MyColors.axis, PenThicknessToDraw.axis)
         self.painter_section.setPen(pen)
-        self.painter_section.drawLine(int(x0), int(y0), int(x0), int(y1))
+        self.painter_section.drawLine(int(x0), int(y0+10), int(x0), int(y1-10))
 
     def draw_addition_plate(self, scale: float, z: float):
         """draw the addition plate """
@@ -1091,6 +1205,12 @@ class GeneralWindow(QMainWindow):
             x = int(m / self._m_max * Menus.sliders_width)
             self.painter_slider.drawLine(x, 0, x, Menus.slider_label_height)
         return None
+
+    def draw_round_concrete_section(self, R: float, r: float, scale: float,
+                                    brush: QtGui.QBrush = QtGui.QBrush(QColor(50, 50, 50))):
+        center = QPoint(int(variables_the_program.Menus.b_left_side/2),
+                        int(variables_the_program.Menus.h_top/2))
+        self.draw_a_round_section(center=center, R=int(R*scale),r=int(r*scale), brush=brush)
 
     def draw_a_concrete_section(self, section: AConcreteSection, scale: float, z: float,
                                 brush: QtGui.QBrush = QtGui.QBrush(QColor(50, 50, 50))):
@@ -1145,6 +1265,13 @@ class GeneralWindow(QMainWindow):
     def draw_a_polygon(self, polygon: QPolygonF, brush: QtGui.QBrush = QtGui.QBrush(QColor(50, 50, 50))):
         self.painter_section.setBrush(brush)
         self.painter_section.drawPolygon(polygon)
+
+    def draw_a_round_section(self, R: int, r: int, center:QPoint, brush: QtGui.QBrush = QtGui.QBrush(QColor(50, 50, 50))):
+        self.painter_section.setBrush(brush)
+        self.painter_section.drawEllipse(center, R, R)
+        brush = QtGui.QBrush(MyColors.background)
+        self.painter_section.setBrush(brush)
+        self.painter_section.drawEllipse(center, r, r)
 
     def plus_an_element_of_steel(self):
         self.button_minus_steel.setEnabled(True)
@@ -1530,7 +1657,7 @@ class GeneralWindow(QMainWindow):
         self.draw_a_polygon(polygon=polygon, brush=brush)
 
 
-def correct_a_string(string: str, int_: bool=False, only_positive: bool=False) -> float:
+def correct_a_string(string: str, int_: bool=False, only_positive: bool=False) -> float|int:
     string = string.replace(",", ".")
     if only_positive:
         string = string.replace("-", "")
