@@ -141,11 +141,15 @@ class AConcreteSection(ElementOfSection):
 
 
 class ASteelLine(ElementOfSection):
-    def __init__(self, d: float = 8, y: float = 5, n: float = 2, m: float = 1,
-                 steel: str = InitiationValues.default_steel_class, s0: float = 0, typ_of_diagram: int = 0):
+    def __init__(self, d: float = 8,
+                 y: float = 5, x: float = 0,
+                 n: float = 2, m: float = 1,
+                 steel: str = InitiationValues.default_steel_class, s0: float = 0, typ_of_diagram: int = 0,
+                 row:int = 0):
         self._f0_1k = 500 / 1.15
         self._fk = 525 / 1.15
         self._d = d
+        self._x = x
         self._y = y  # from the bottom
         self._n = n
         self._m = m
@@ -157,9 +161,14 @@ class ASteelLine(ElementOfSection):
         self._color_str = get_str_from_color(color_rgba=self._color_rgba)
         self.e_init = 0
         self.e_init_add_plate = 0
+        self.row = row
+
+    @property
+    def x_y(self):
+        return [self._x, self._y]
 
     @staticmethod
-    def _get_diagram_for_the_steel(new_steel) -> None | DiagramSteel | DiagramCarbon:
+    def _get_diagram_for_the_steel(new_steel: str) -> None | DiagramSteel | DiagramCarbon:
         if new_steel in MaterialVariables.steel_for_concrete:
             return DiagramSteel(steel_type=new_steel)
         elif new_steel in MaterialVariables.carbon_class:

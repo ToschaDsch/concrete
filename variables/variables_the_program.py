@@ -116,6 +116,7 @@ class TypeOfDiagram:
 
 @dataclass
 class MenuNames:
+    horizontal_header_steel = ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']
     concrete_diagram = 'Diagramm für Beton'
     steel_diagram = 'Diagramm für Stahl'
     label_n_top = 'das kleinste Teil des Betonsegments wird'

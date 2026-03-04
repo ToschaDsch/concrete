@@ -1,3 +1,4 @@
+import math
 from functools import partial
 
 from PySide6 import QtWidgets, QtGui, QtCore
@@ -12,7 +13,7 @@ from modul_to_draw.addition_functions_to_draw import make_intermediate_result_fo
 from moduls_to_calculate.general_class_to_calculate import AllElementsOfTheSection
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 
-from moduls_to_calculate.diagram import DiagramToDraw
+from moduls_to_calculate.diagram import DiagramToDraw, DiagramSteel
 from save_open.open import open_file
 from save_open.save import save_file_as
 from variables import variables_the_program
@@ -350,6 +351,7 @@ class GeneralWindow(QMainWindow):
 
 
     def round_section(self, check: bool):
+        self._section.round_section = check
         if check:
             value_1 = False
             value_2 = True
@@ -357,14 +359,13 @@ class GeneralWindow(QMainWindow):
             R = self.lineedit_R.text()
             r = self.lineedit_r.text()
             nas_p = self.lineedit_nas_p.text()
-            self._section.round_section = True
             self._section.R = correct_a_string(string=R, only_positive=True)
             self._section.r = correct_a_string(string=r, only_positive=True)
             self._section.n_as_p = correct_a_string(string=nas_p, only_positive=True, int_=True)
         else:
             value_1 = True
             value_2 = False
-        self._section.round_section = check
+        self.scan_steel_table_make_list_of_steel()
         self._section.addition_concrete.calculate_with_top_plate = False
         self.checkbox_addition_top_plate.setChecked(False)
         self.checkbox_addition_top_plate.setEnabled(value_1)
@@ -377,7 +378,6 @@ class GeneralWindow(QMainWindow):
         self.lineedit_R.setEnabled(value_2)
         self.lineedit_r.setEnabled(value_2)
         self.lineedit_nas_p.setEnabled(value_2)
-
 
         self.draw_all()
 
@@ -782,15 +782,55 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
         return None
 
-    def scan_steel_for_round_section(self):
+    def scan_steel_table_make_list_of_steel(self):
+        self._section.list_of_steel = []
         for row in range(self.table_steel.rowCount()):
+            dict_of_parameters = {"row": row}
             for col in range(1,self.table_steel.columnCount()):
-                print(row, col)
                 item = self.table_steel.item(row, col)
-                if col != 5:
+
+                key = self.table_steel.horizontalHeaderItem(col).text()
+                if col == 5:
+                    item_i = self.list_of_combobox_steel[row]
+                    t = item_i.currentText()
+                else:
                     text = item.text()
-                    t = correct_a_string(string=text, only_positive=True) if col != 5 else text
-                    print(t)
+                    t = correct_a_string(string=str(text), only_positive=True)
+                dict_of_parameters[key] = t
+            if self._section.round_section:
+                self.make_list_of_line_steel_from_parameters_for_round_section(dict_of_parameters)
+            else:
+                self.make_list_of_line_steel_from_parameters_for_not_round_section(dict_of_parameters)
+
+    def make_list_of_line_steel_from_parameters_for_not_round_section(self, dict_of_parameters: dict):
+        header = MenuNames.horizontal_header_steel
+        n = int(dict_of_parameters[header[3]])
+        steel_typ = dict_of_parameters[header[5]]
+        y = dict_of_parameters[header[4]]
+        d = dict_of_parameters[header[1]]
+        m = dict_of_parameters[header[2]]
+        s0 = dict_of_parameters[header[6]]
+        type_of_diagram = self._section.type_of_diagram_steel
+        new_section = ASteelLine(d=d, y=y, n=n, m=m, steel=steel_typ, s0=s0, typ_of_diagram=type_of_diagram)
+        self._section.list_of_steel.append(new_section)
+
+    def make_list_of_line_steel_from_parameters_for_round_section(self, dict_of_parameters: dict):
+        """ ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']"""
+        header = MenuNames.horizontal_header_steel
+        n = int(dict_of_parameters[header[3]])
+        df_i = 2*math.pi/n
+        r = dict_of_parameters[header[4]]
+        steel_typ = dict_of_parameters[header[5]]
+        row = dict_of_parameters["row"]
+        d = dict_of_parameters[header[1]]
+        m = dict_of_parameters[header[2]]
+        s0 = dict_of_parameters[header[6]]
+        print("n=", n)
+        for i in range(n):
+            y = self._section.R - math.sin(i*df_i)*r
+            x = math.cos(i*df_i)*r
+            line_steel = ASteelLine(d=d, y=y, x=x, m=m, n=1,s0=s0,steel=steel_typ, row=row)
+            self._section.list_of_steel.append(line_steel)
 
 
     def steel_table_changed_item(self, item) -> None | bool:
@@ -798,7 +838,8 @@ class GeneralWindow(QMainWindow):
         if Menus.table_insert:
             return None
         if self._section.round_section:
-            self.scan_steel_for_round_section()
+            self.scan_steel_table_make_list_of_steel()
+            self.draw_all()
             return None
         text = item.text()
         if text == '' or text == '.' or text == '-.':
@@ -841,7 +882,7 @@ class GeneralWindow(QMainWindow):
 
     def load_layout_steel(self, layout: QVBoxLayout):
         self.table_steel.verticalHeader().hide()
-        header = ('Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2')
+        header = MenuNames.horizontal_header_steel
         b = variables_the_program.Menus.b_center + variables_the_program.Menus.b_right_side
 
         steel_layout = QtWidgets.QHBoxLayout()
@@ -1232,14 +1273,21 @@ class GeneralWindow(QMainWindow):
         color = QColor(*section.color_rgba)
         brush = QtGui.QBrush(color)
         self.painter_section.setBrush(brush)
-        d, y, n, m, steel, s0 = section.get_d_y_n_m_steel_s0()
+        d_0, y, n, m, steel, s0 = section.get_d_y_n_m_steel_s0()
         b = self._section.get_b_for_y(y=y)
         t = b / n * scale  # space between steel
-        r = ((d / 20) ** 2 * m) ** 0.5  # radius cm
-        d = r * scale * 2
-
+        d = scale * d_0 * m /10   # diameter cm
+        d = 5 if d < 5 else d
+        x, y = section.x_y
         y = get_y0(section=self._section, scale=scale) - (y + z) * scale - d / 2
-        x = Menus.b_left_side * 0.5 - b * 0.5 * scale - d / 2 + t / 2
+        if self._section.round_section:
+            print("round section", len(self._section.list_of_steel), d_0, d, m, scale)
+            x = Menus.b_left_side * 0.5 - scale*x - d / 2
+            print(x, y)
+        else:
+            print("notround section", len(self._section.list_of_steel), d_0, d, m, scale)
+            x = Menus.b_left_side * 0.5 - b * 0.5 * scale - d / 2 + t / 2
+
         for k in range(int(n)):
             self.painter_section.drawEllipse(x, y, d, d)
             x += t
@@ -1277,6 +1325,7 @@ class GeneralWindow(QMainWindow):
         self.button_minus_steel.setEnabled(True)
         self._section.add_copy_of_last_element_and_return_it(type_of_section=MaterialVariables.steel)
         self.update_the_steel_table()
+        self.scan_steel_table_make_list_of_steel()
 
     def update_additional_plate(self, new_list_of_add_plate: dict):
 
@@ -1372,28 +1421,51 @@ class GeneralWindow(QMainWindow):
         return None
 
     def update_the_steel_table(self, new_list_of_steel: list[ASteelLine] = None):
-        n = len(self._section.list_of_steel)
-        for row_i in range(n):
-            self.table_steel.removeRow(0)
+        n = self.table_steel.rowCount()
+        last_row = n - 1
+        if last_row < 0:
+            return  # No rows
+        Menus.table_insert = True
         if new_list_of_steel:
             self._section.list_of_steel = new_list_of_steel
-        row_i = 0
-        for section_i in reversed(self._section.list_of_steel):
-            self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
-            row_i += 1
+            row_i = 0
+            for section_i in self._section.list_of_steel:
+                self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
+                row_i += 1
+        else:
+            # Insert new row at bottom
+            new_row = self.table_steel.rowCount()
+            self.table_steel.insertRow(new_row)
+            column_count = self.table_steel.columnCount()
+            # Copy items
+            for col in range(column_count):
+                if col == 5:
+                    steel_name = self._section.list_of_steel[0].steel.name_of_class
+                    new_item = self.add_new_combobox_steel(row_number=new_row, steel_name=steel_name)
+                    self.list_of_combobox_steel.append(new_item)
+                    self.table_steel.setCellWidget(new_row, 5, self.list_of_combobox_steel[-1])
+                else:
+                    original_item = self.table_steel.item(last_row, col)
+                    if original_item:
+                        new_item = QTableWidgetItem(original_item.text())
+                    else:
+                        new_item = QTableWidgetItem(str(new_row))
+                    self.table_steel.setItem(new_row, col, new_item)
+            self.scan_steel_table_make_list_of_steel()
         # + - buttons
         if n > 1:
             self.button_minus_steel.setEnabled(True)
-        self.draw_date_and_results()
+        Menus.table_insert = False
+        self.draw_all()
 
     def minus_an_element_of_steel(self):
         if len(self._section.list_of_steel) == 2:
             self.button_minus_steel.setEnabled(False)
-        self._section.remove_last_element(type_of_section=MaterialVariables.steel)
         row = 0
         self.table_steel.removeRow(row)
         del self.list_of_combobox_steel[row]
-        self.draw_date_and_results()
+        self.scan_steel_table_make_list_of_steel()
+        self.draw_all()
 
     def add_an_element_in_the_steel_table(self, row_number: int, new_element: ASteelLine):
         self.table_steel.insertRow(row_number)
@@ -1415,9 +1487,16 @@ class GeneralWindow(QMainWindow):
         self.table_steel.setItem(row_number, 4, QTableWidgetItem(str(y)))
         # s0
         self.table_steel.setItem(row_number, 6, QTableWidgetItem(str(s0)))
-
-        self.list_of_combobox_steel.append(QComboBox())
         steel_name = steel.name_of_class
+        new_combobox = self.add_new_combobox_steel(steel_name=steel_name, row_number=row_number)
+        self.list_of_combobox_steel.append(new_combobox)
+        self.table_steel.setCellWidget(row_number, 5, self.list_of_combobox_steel[-1])
+        Menus.table_insert = False
+        self.button_minus_steel.setEnabled(True)
+        self.draw_date_and_results()
+
+    def add_new_combobox_steel(self, steel_name:str, row_number:int) -> QComboBox:
+        self.list_of_combobox_steel.append(QComboBox())
         # steel
         for steel_name_i in MaterialVariables.steel_for_concrete:
             self.list_of_combobox_steel[-1].addItem(steel_name_i)
@@ -1431,13 +1510,10 @@ class GeneralWindow(QMainWindow):
         else:
             index = 0
         self.list_of_combobox_steel[-1].setCurrentIndex(index)
-        row_number_in_list = len(self._section.list_of_steel) - row_number - 1
+        row_number_in_list = row_number
         self.list_of_combobox_steel[-1].currentIndexChanged.connect(
             partial(self.change_index_of_combobox_steel, row_number_in_list))
-        self.table_steel.setCellWidget(row_number, 5, self.list_of_combobox_steel[-1])
-        Menus.table_insert = False
-        self.button_minus_steel.setEnabled(True)
-        self.draw_date_and_results()
+        return self.list_of_combobox_steel[-1]
 
     def change_index_of_combobox_steel(self, row_number: int, index: int):
         steel_line = self._section.list_of_steel[row_number]
