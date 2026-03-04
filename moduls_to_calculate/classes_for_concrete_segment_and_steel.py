@@ -25,10 +25,10 @@ class ElementOfSection(ABC):
 
 
 class AConcreteSection(ElementOfSection):
-    def __init__(self, bo: float = 10, bu: float = 10, y0: float = 0, h: float = 20,
+    def __init__(self, b_top: float = 10, b_bottom: float = 10, y0: float = 0, h: float = 20,
                  concrete_class: str = InitiationValues.default_concrete_class):
-        self._bo = bo
-        self._bu = bu
+        self._bo = b_top
+        self._bu = b_bottom
         self._y0 = y0
         self._h = h
         self._concrete = DiagramConcrete(concrete_class=concrete_class)
@@ -116,7 +116,7 @@ class AConcreteSection(ElementOfSection):
         return normal_force, moment, list_for_graphic, e_i[0], e_i[-1]
 
     def get_copy_of_me(self):
-        return AConcreteSection(bo=self._bo, bu=self._bu, y0=self._y0, h=self._h)
+        return AConcreteSection(b_top=self._bo, b_bottom=self._bu, y0=self._y0, h=self._h)
 
     def calculate_e_init_additional_plate(self, result__1: Result, result_1: Result, m_init: float, h: float):
         """

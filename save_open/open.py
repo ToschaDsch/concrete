@@ -48,7 +48,7 @@ def transform_from_json_to_concrete(json_data) -> list[AConcreteSection]:
         y0 = float(data_i['y0'])
         h = float(data_i['h'])
         concrete_class = data_i['concrete_class']
-        new_section = AConcreteSection(bo=bo, bu=bu, y0=y0, h=h, concrete_class=concrete_class)
+        new_section = AConcreteSection(b_top=bo, b_bottom=bu, y0=y0, h=h, concrete_class=concrete_class)
         new_list_of_concrete.append(new_section)
     return new_list_of_concrete
 

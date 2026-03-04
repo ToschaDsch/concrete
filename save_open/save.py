@@ -50,8 +50,15 @@ def round_section_to_dict(section: AllElementsOfTheSection) -> dict:
 
 def concrete_to_list(section: AllElementsOfTheSection) -> list:
     list_of_all_sections = []
-    for section_i in section.list_of_concrete_sections:
-        list_of_all_sections.append(a_concrete_section_to_dict(section=section_i))
+    if section.round_section:
+        list_of_all_sections.append({'bo': 10,
+                           'bu': 10,
+                           'y0': 0,
+                           'h': 20,
+                           'concrete_class': "C25/30"})
+    else:
+        for section_i in section.list_of_concrete_sections:
+            list_of_all_sections.append(a_concrete_section_to_dict(section=section_i))
 
     return list_of_all_sections
 

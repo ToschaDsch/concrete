@@ -1,4 +1,5 @@
 import math
+from email._header_value_parser import Section
 from functools import partial
 
 from PySide6 import QtWidgets, QtGui, QtCore
@@ -13,7 +14,7 @@ from modul_to_draw.addition_functions_to_draw import make_intermediate_result_fo
 from moduls_to_calculate.general_class_to_calculate import AllElementsOfTheSection
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 
-from moduls_to_calculate.diagram import DiagramToDraw, DiagramSteel
+from moduls_to_calculate.diagram import DiagramToDraw
 from save_open.open import open_file
 from save_open.save import save_file_as
 from variables import variables_the_program
@@ -193,7 +194,7 @@ class GeneralWindow(QMainWindow):
         layout.addLayout(layout_concrete)
         layout_steel = QHBoxLayout()
         layout.addLayout(layout_steel)
-        header = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
+        header = MenuNames.horizontal_header_additional_concrete
         b = int((variables_the_program.Menus.b_center + variables_the_program.Menus.b_right_side +
                  variables_the_program.Menus.b_left_side) / 2)
         self.table_additional_concrete.setFixedWidth(b)
@@ -260,6 +261,7 @@ class GeneralWindow(QMainWindow):
     def text_changed_R(self, new_text: str):
         b = correct_a_string(string=new_text, only_positive=True)
         self._section.R = b
+        self.divide_concrete_round_concrete_section()
         self.draw_all()
 
     def text_changed_r(self, new_text: str):
@@ -270,6 +272,7 @@ class GeneralWindow(QMainWindow):
             r = self._section.R - 5
             self._section.r = r
             self.lineedit_r.setText(str(r))
+        self.divide_concrete_round_concrete_section()
         self.draw_all()
 
     def text_changed_n_as_p(self, new_text: str):
@@ -277,6 +280,7 @@ class GeneralWindow(QMainWindow):
         self._section.n_as_p = b
         self.draw_all()
         self._section.n_as_p = b
+        self.divide_concrete_round_concrete_section()
         self.draw_all()
 
     def text_changed_h_addition_plate(self, new_text: str):
@@ -291,7 +295,7 @@ class GeneralWindow(QMainWindow):
         self.checkbox_carbon.stateChanged.connect(self.calculate_with_carbon)
         layout_carbon_strengthening.addWidget(self.checkbox_carbon)
 
-        header = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
+        header = MenuNames.horizontal_header_concrete_carbon
         b = int((variables_the_program.Menus.b_center + variables_the_program.Menus.b_right_side +
                  variables_the_program.Menus.b_left_side) / 2)
         self.table_carbon.setFixedWidth(b)
@@ -349,6 +353,46 @@ class GeneralWindow(QMainWindow):
         self._section.addition_concrete.section.y0 = h
         self.draw_all()
 
+    def divide_concrete_round_concrete_section(self):
+        n_divide = InitiationValues.n_as_p
+        y = 0
+        R = self._section.R
+        r = self._section.r
+        dy = 2*R/n_divide
+        self._section.list_of_concrete_sections = []
+        for i in range(n_divide):
+            y_0 = y
+            y = dy*(i+1)
+            h0 = abs(R-y_0)
+            h = abs(R-y)
+            b_bottom = 2*((R**2-h0**2)**0.5 - (r**2-h0**2)**0.5) if r>= h0 else 2*(R**2-h0**2)**0.5
+            b_top = 2 * ((R ** 2 - h ** 2) ** 0.5 - (r ** 2 - h ** 2) ** 0.5) if r >= h else 2 * (
+                        R ** 2 - h ** 2) ** 0.5
+            new_section = AConcreteSection(b_top=b_top, b_bottom=b_bottom, h=dy, concrete_class=self._section.concrete_class)
+            self._section.list_of_concrete_sections.append(new_section)
+
+    def scan_concrete_table(self):
+        self._section.list_of_concrete_sections = []
+        for row in reversed(range(self.table_concrete.rowCount())):
+            dict_of_parameters = {"row": row}
+            for col in range(self.table_concrete.columnCount()):
+                item = self.table_concrete.item(row, col)
+
+                key = self.table_concrete.horizontalHeaderItem(col).text()
+                text = item.text()
+                t = correct_a_string(string=str(text), only_positive=True)
+                dict_of_parameters[key] = t
+            self.make_list_of_concrete_sections(dict_of_parameters=dict_of_parameters)
+
+    def make_list_of_concrete_sections(self, dict_of_parameters: dict):
+        """ ['bu, cm.', 'bo, cm.', 't, cm']"""
+        header = MenuNames.horizontal_header_concrete
+        b_top=dict_of_parameters[header[0]]
+        b_bottom=dict_of_parameters[header[1]]
+        h = dict_of_parameters[header[2]]
+        concrete_class = self._section.concrete_class
+        concrete_section = AConcreteSection(b_top=b_top, b_bottom=b_bottom, concrete_class=concrete_class, h=h)
+        self._section.list_of_concrete_sections.append(concrete_section)
 
     def round_section(self, check: bool):
         self._section.round_section = check
@@ -362,9 +406,11 @@ class GeneralWindow(QMainWindow):
             self._section.R = correct_a_string(string=R, only_positive=True)
             self._section.r = correct_a_string(string=r, only_positive=True)
             self._section.n_as_p = correct_a_string(string=nas_p, only_positive=True, int_=True)
+            self.divide_concrete_round_concrete_section()
         else:
             value_1 = True
             value_2 = False
+            self.scan_concrete_table()
         self.scan_steel_table_make_list_of_steel()
         self._section.addition_concrete.calculate_with_top_plate = False
         self.checkbox_addition_top_plate.setChecked(False)
@@ -374,7 +420,8 @@ class GeneralWindow(QMainWindow):
         self.checkbox_carbon.setChecked(False)
         self.checkbox_carbon.setEnabled(value_1)
         self.table_concrete.setEnabled(value_1)
-
+        self.button_plus_concrete.setEnabled(value_1)
+        self.button_minus_concrete.setChecked(value_1)
         self.lineedit_R.setEnabled(value_2)
         self.lineedit_r.setEnabled(value_2)
         self.lineedit_nas_p.setEnabled(value_2)
@@ -680,7 +727,7 @@ class GeneralWindow(QMainWindow):
         return None
 
     def load_layout_concrete(self, layout: QVBoxLayout):
-        header = ('bu, cm.', 'bo, cm.', 't, cm')
+        header = MenuNames.horizontal_header_concrete
         b = variables_the_program.Menus.b_left_side
 
         concrete_layout = QtWidgets.QHBoxLayout()
@@ -825,7 +872,6 @@ class GeneralWindow(QMainWindow):
         d = dict_of_parameters[header[1]]
         m = dict_of_parameters[header[2]]
         s0 = dict_of_parameters[header[6]]
-        print("n=", n)
         for i in range(n):
             y = self._section.R - math.sin(i*df_i)*r
             x = math.cos(i*df_i)*r
@@ -1281,11 +1327,8 @@ class GeneralWindow(QMainWindow):
         x, y = section.x_y
         y = get_y0(section=self._section, scale=scale) - (y + z) * scale - d / 2
         if self._section.round_section:
-            print("round section", len(self._section.list_of_steel), d_0, d, m, scale)
             x = Menus.b_left_side * 0.5 - scale*x - d / 2
-            print(x, y)
         else:
-            print("notround section", len(self._section.list_of_steel), d_0, d, m, scale)
             x = Menus.b_left_side * 0.5 - b * 0.5 * scale - d / 2 + t / 2
 
         for k in range(int(n)):
@@ -1649,7 +1692,6 @@ class GeneralWindow(QMainWindow):
         ec = result.e_top
         sc = result.sc_general_section
         self.draw_concrete_i_strain_and_stress(ec=ec, sc=sc)
-        print(MenuNames.stress_concrete)
         print(f"{MenuNames.general_section}, {MenuNames.sigma_c} = {round(sc, 5)}")
         if self._section.addition_concrete.calculate_with_top_plate:
             ec = result.e_top_add_plate

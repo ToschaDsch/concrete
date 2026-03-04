@@ -56,6 +56,9 @@ class InitiationValues:
     # concrete
     b_concrete = 10
     h_concrete = 20
+    R = 200.0
+    r = 150.0
+    n_as_p = 10   # vertical divide round section
     # steel
     diameter_steel = 8
     m_steel = 1
@@ -69,9 +72,7 @@ class InitiationValues:
     # addition concrete
     h_add = 20
     b_add = 20
-    R = 200.0
-    r = 150.0
-    n_as_p = 10
+
 
 
 @dataclass
@@ -117,6 +118,9 @@ class TypeOfDiagram:
 @dataclass
 class MenuNames:
     horizontal_header_steel = ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']
+    horizontal_header_concrete = ['bu, cm.', 'bo, cm.', 't, cm']
+    horizontal_header_concrete_carbon = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
+    horizontal_header_additional_concrete = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
     concrete_diagram = 'Diagramm für Beton'
     steel_diagram = 'Diagramm für Stahl'
     label_n_top = 'das kleinste Teil des Betonsegments wird'

@@ -245,6 +245,8 @@ class AllElementsOfTheSection:
         self.is_calculated = False
 
     def correct_new_concrete_section(self):
+        if len(self._list_of_concrete_sections) == 0:
+            return None
         yi = 0
         for a_section in self._list_of_concrete_sections:
             bo, bu, y0, h = a_section.get_bo_bu_y0_h()
@@ -253,6 +255,7 @@ class AllElementsOfTheSection:
         self.addition_concrete.steel.h = h + y0
         self.divide_all_concrete_sections()
         self.is_calculated = False
+        return None
 
     def get_b_h_max(self) -> tuple[float, float]:
         b = 0
