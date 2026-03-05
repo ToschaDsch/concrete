@@ -85,6 +85,7 @@ class PenThicknessToDraw:
     stress_concrete = 1
     stress_steel = 5
     strains_section = 1
+    fictive_concrete_for_round_section = 1
 
 
 @dataclass
@@ -92,6 +93,7 @@ class MyColors:
     background = QtGui.QColor(230, 230, 230)
     carbon = QColor(0, 130, 130)
     carbon_stress = QColor(0, 180, 180)
+    fictive_concrete_for_round_section=QColor(150, 150, 150, 50)
     concrete = QColor(150, 150, 150)
     concrete_addition = QColor(180, 150, 150)
     concrete_diagram = QColor(150, 0, 0)

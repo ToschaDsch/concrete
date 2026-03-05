@@ -259,9 +259,12 @@ class GeneralWindow(QMainWindow):
 
     def text_changed_R(self, new_text: str):
         b = correct_a_string(string=new_text, only_positive=True)
+        if b == 0:
+            return None
         self._section.R = b
         self.divide_concrete_round_concrete_section()
         self.draw_all()
+        return None
 
     def text_changed_r(self, new_text: str):
         b = correct_a_string(string=new_text, only_positive=True)
@@ -276,9 +279,10 @@ class GeneralWindow(QMainWindow):
 
     def text_changed_n_as_p(self, new_text: str):
         b = correct_a_string(string=new_text, only_positive=True, int_=True)
+        if b < 2:
+            b = 2
         self._section.n_as_p = b
-        self.draw_all()
-        self._section.n_as_p = b
+
         self.divide_concrete_round_concrete_section()
         self.draw_all()
 
@@ -353,7 +357,7 @@ class GeneralWindow(QMainWindow):
         self.draw_all()
 
     def divide_concrete_round_concrete_section(self):
-        n_divide = InitiationValues.n_as_p
+        n_divide = self._section.n_as_p
         y = 0
         R = self._section.R
         r = self._section.r
@@ -367,7 +371,8 @@ class GeneralWindow(QMainWindow):
             b_bottom = 2*((R**2-h0**2)**0.5 - (r**2-h0**2)**0.5) if r>= h0 else 2*(R**2-h0**2)**0.5
             b_top = 2 * ((R ** 2 - h ** 2) ** 0.5 - (r ** 2 - h ** 2) ** 0.5) if r >= h else 2 * (
                         R ** 2 - h ** 2) ** 0.5
-            new_section = AConcreteSection(b_top=b_top, b_bottom=b_bottom, h=dy, concrete_class=self._section.concrete_class)
+            new_section = AConcreteSection(b_top=b_top, b_bottom=b_bottom, h=dy, y0=y_0,
+                                           concrete_class=self._section.concrete_class)
             self._section.list_of_concrete_sections.append(new_section)
 
     def scan_concrete_table(self):
@@ -1241,6 +1246,12 @@ class GeneralWindow(QMainWindow):
             R = self._section.R
             r = self._section.r
             self.draw_round_concrete_section(R=R, r=r, scale=scale, brush=brush)
+            # visual test
+            pen_2 = QtGui.QPen(MyColors.concrete_boards, PenThicknessToDraw.fictive_concrete_for_round_section)
+            self.painter_section.setPen(pen_2)
+            brush = QtGui.QBrush(MyColors.fictive_concrete_for_round_section)
+            for section in self._section.list_of_concrete_sections:
+                self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
         else:
             for section in self._section.list_of_concrete_sections:
                 self.draw_a_concrete_section(section=section, scale=scale, brush=brush, z=z)
@@ -1475,6 +1486,8 @@ class GeneralWindow(QMainWindow):
     def add_new_list_of_steel_to_the_table(self, new_list_of_steel: list[ASteelLine]):
         self._section.list_of_steel = new_list_of_steel
         row_i = 0
+        self.table_steel.setRowCount(0)
+        self.list_of_combobox_steel = []
         for section_i in self._section.list_of_steel:
             self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
             row_i += 1
@@ -1490,15 +1503,19 @@ class GeneralWindow(QMainWindow):
         column_count = self.table_steel.columnCount()
         # Copy items
         for col in range(column_count):
+
             if col == 5:
                 steel_name = self._section.list_of_steel[0].steel.name_of_class
                 self.add_new_combobox_steel(row_number=new_row, steel_name=steel_name)
-                print("combolen", len(self.list_of_combobox_steel))
                 self.table_steel.setCellWidget(new_row, 5, self.list_of_combobox_steel[-1])
             else:
                 original_item = self.table_steel.item(last_row, col)
                 if original_item:
-                    new_item = QTableWidgetItem(original_item.text())
+                    if col == 0:
+                        text = str(new_row)
+                    else:
+                        text = original_item.text()
+                    new_item = QTableWidgetItem(text)
                 else:
                     new_item = QTableWidgetItem(str(new_row))
                 self.table_steel.setItem(new_row, col, new_item)
