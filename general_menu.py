@@ -1,5 +1,4 @@
 import math
-from email._header_value_parser import Section
 from functools import partial
 
 from PySide6 import QtWidgets, QtGui, QtCore
@@ -549,7 +548,11 @@ class GeneralWindow(QMainWindow):
 
     def save_file(self):
         file = Menus.current_file
-        save_file_as(section=self._section, file=file)
+        if self._section.round_section:
+            parameters = self.scan_steel_table_make_list_of_steel_make_a_dict_of_parameters()
+        else:
+            parameters = None
+        save_file_as(section=self._section, file=file, parameters=parameters)
 
     def load_layout_diagram(self, layout: QVBoxLayout):
         layout.addWidget(self.label_diagram_canvas)
@@ -829,13 +832,12 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
         return None
 
-    def scan_steel_table_make_list_of_steel(self):
-        self._section.list_of_steel = []
+    def scan_steel_table_make_list_of_steel_make_a_dict_of_parameters(self) -> dict:
+        dict_of_parameters_all = dict()
         for row in range(self.table_steel.rowCount()):
             dict_of_parameters = {"row": row}
             for col in range(1,self.table_steel.columnCount()):
                 item = self.table_steel.item(row, col)
-
                 key = self.table_steel.horizontalHeaderItem(col).text()
                 if col == 5:
                     item_i = self.list_of_combobox_steel[row]
@@ -844,6 +846,13 @@ class GeneralWindow(QMainWindow):
                     text = item.text()
                     t = correct_a_string(string=str(text), only_positive=True)
                 dict_of_parameters[key] = t
+            dict_of_parameters_all[row] = dict_of_parameters
+        return dict_of_parameters_all
+
+    def scan_steel_table_make_list_of_steel(self):
+        self._section.list_of_steel = []
+        dict_of_parameters_all = self.scan_steel_table_make_list_of_steel_make_a_dict_of_parameters()
+        for key, dict_of_parameters in dict_of_parameters_all.items():
             if self._section.round_section:
                 self.make_list_of_line_steel_from_parameters_for_round_section(dict_of_parameters)
             else:
@@ -1463,6 +1472,38 @@ class GeneralWindow(QMainWindow):
         self.draw_date_and_results()
         return None
 
+    def add_new_list_of_steel_to_the_table(self, new_list_of_steel: list[ASteelLine]):
+        self._section.list_of_steel = new_list_of_steel
+        row_i = 0
+        for section_i in self._section.list_of_steel:
+            self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
+            row_i += 1
+
+    def insert_new_row_at_bottom_of_table_steel(self):
+        # insert new row at bottom
+        n = self.table_steel.rowCount()
+        last_row = n - 1
+        if last_row < 0:
+            return  # No rows
+        new_row = self.table_steel.rowCount()
+        self.table_steel.insertRow(new_row)
+        column_count = self.table_steel.columnCount()
+        # Copy items
+        for col in range(column_count):
+            if col == 5:
+                steel_name = self._section.list_of_steel[0].steel.name_of_class
+                self.add_new_combobox_steel(row_number=new_row, steel_name=steel_name)
+                print("combolen", len(self.list_of_combobox_steel))
+                self.table_steel.setCellWidget(new_row, 5, self.list_of_combobox_steel[-1])
+            else:
+                original_item = self.table_steel.item(last_row, col)
+                if original_item:
+                    new_item = QTableWidgetItem(original_item.text())
+                else:
+                    new_item = QTableWidgetItem(str(new_row))
+                self.table_steel.setItem(new_row, col, new_item)
+        self.scan_steel_table_make_list_of_steel()
+
     def update_the_steel_table(self, new_list_of_steel: list[ASteelLine] = None):
         n = self.table_steel.rowCount()
         last_row = n - 1
@@ -1470,31 +1511,9 @@ class GeneralWindow(QMainWindow):
             return  # No rows
         Menus.table_insert = True
         if new_list_of_steel:
-            self._section.list_of_steel = new_list_of_steel
-            row_i = 0
-            for section_i in self._section.list_of_steel:
-                self.add_an_element_in_the_steel_table(row_number=row_i, new_element=section_i)
-                row_i += 1
+            self.add_new_list_of_steel_to_the_table(new_list_of_steel=new_list_of_steel)
         else:
-            # Insert new row at bottom
-            new_row = self.table_steel.rowCount()
-            self.table_steel.insertRow(new_row)
-            column_count = self.table_steel.columnCount()
-            # Copy items
-            for col in range(column_count):
-                if col == 5:
-                    steel_name = self._section.list_of_steel[0].steel.name_of_class
-                    new_item = self.add_new_combobox_steel(row_number=new_row, steel_name=steel_name)
-                    self.list_of_combobox_steel.append(new_item)
-                    self.table_steel.setCellWidget(new_row, 5, self.list_of_combobox_steel[-1])
-                else:
-                    original_item = self.table_steel.item(last_row, col)
-                    if original_item:
-                        new_item = QTableWidgetItem(original_item.text())
-                    else:
-                        new_item = QTableWidgetItem(str(new_row))
-                    self.table_steel.setItem(new_row, col, new_item)
-            self.scan_steel_table_make_list_of_steel()
+            self.insert_new_row_at_bottom_of_table_steel()
         # + - buttons
         if n > 1:
             self.button_minus_steel.setEnabled(True)
@@ -1504,7 +1523,7 @@ class GeneralWindow(QMainWindow):
     def minus_an_element_of_steel(self):
         if len(self._section.list_of_steel) == 2:
             self.button_minus_steel.setEnabled(False)
-        row = 0
+        row = self.table_steel.rowCount()-1
         self.table_steel.removeRow(row)
         del self.list_of_combobox_steel[row]
         self.scan_steel_table_make_list_of_steel()
@@ -1531,8 +1550,7 @@ class GeneralWindow(QMainWindow):
         # s0
         self.table_steel.setItem(row_number, 6, QTableWidgetItem(str(s0)))
         steel_name = steel.name_of_class
-        new_combobox = self.add_new_combobox_steel(steel_name=steel_name, row_number=row_number)
-        self.list_of_combobox_steel.append(new_combobox)
+        self.add_new_combobox_steel(steel_name=steel_name, row_number=row_number)
         self.table_steel.setCellWidget(row_number, 5, self.list_of_combobox_steel[-1])
         Menus.table_insert = False
         self.button_minus_steel.setEnabled(True)

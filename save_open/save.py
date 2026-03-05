@@ -5,11 +5,11 @@ from PySide6.QtWidgets import QFileDialog
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 from moduls_to_calculate.general_class_to_calculate import AllElementsOfTheSection
 
-from variables.variables_the_program import Menus
+from variables.variables_the_program import Menus, MenuNames
 
 
-def save_file_as(section: AllElementsOfTheSection, file=None):
-    data: dict = data_to_dict(section=section)
+def save_file_as(section: AllElementsOfTheSection, file=None, parameters: dict=None):
+    data: dict = data_to_dict(section=section, parameters=parameters)
     json_data = json.dumps(data)
 
     if file is None:
@@ -28,9 +28,9 @@ def save_file_as(section: AllElementsOfTheSection, file=None):
     Menus.save_file_name = file
 
 
-def data_to_dict(section: AllElementsOfTheSection) -> dict:
+def data_to_dict(section: AllElementsOfTheSection, parameters: dict) -> dict:
     concrete = concrete_to_list(section=section)
-    steel = steel_to_list(section=section)
+    steel = steel_to_list(section=section, parameters=parameters)
     carbon = carbon_to_list(section=section)
     additional_plate = additional_plate_to_dict(section=section)
     round_section = round_section_to_dict(section=section)
@@ -86,13 +86,34 @@ def a_concrete_section_to_dict(section: AConcreteSection) -> dict:
     return dict_of_the_section
 
 
-def steel_to_list(section: AllElementsOfTheSection) -> list:
-    list_of_steel_lines = []
+def steel_to_list(section: AllElementsOfTheSection, parameters: dict) -> list:
+    list_of_steel_lines_dicts = []
     type_of_diagram = section.type_of_diagram_steel
-    for steel_line in section.list_of_steel:
-        list_of_steel_lines.append(a_steel_line_to_dict(steel_line=steel_line, type_of_diagram=type_of_diagram))
+    if section.round_section:
+        list_of_steel_lines = parameter_to_steel_line(parameters=parameters)
+
+    else:
+        list_of_steel_lines = section.list_of_steel
+    for steel_line in list_of_steel_lines:
+        list_of_steel_lines_dicts.append(a_steel_line_to_dict(steel_line=steel_line, type_of_diagram=type_of_diagram))
+    return list_of_steel_lines_dicts
+
+def parameter_to_steel_line(parameters: dict) -> list[ASteelLine]:
+    list_of_steel_lines = []
+    for key, dict_i in parameters.items():
+        new_line = make_a_steel_line_from_a_dict(dict_i=dict_i)
+        list_of_steel_lines.append(new_line)
     return list_of_steel_lines
 
+def make_a_steel_line_from_a_dict(dict_i:dict) -> ASteelLine:
+    """['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']"""
+    header = MenuNames.horizontal_header_steel
+    return ASteelLine(d=dict_i[header[1]],
+                      m=dict_i[header[2]],
+                      n=dict_i[header[3]],
+                      y=dict_i[header[4]],
+                      steel=dict_i[header[5]],
+                      s0=dict_i[header[6]],)
 
 def a_steel_line_to_dict(steel_line: ASteelLine, type_of_diagram: int) -> dict:
     d, y, n, m, steel, s0 = steel_line.get_d_y_n_m_steel_s0()
