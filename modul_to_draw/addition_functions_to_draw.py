@@ -83,6 +83,9 @@ def get_scale_x_y_for_diagram(board: float, max_values: tuple[float, float]) -> 
     b = Menus.b_center - 2 * board
     h = Menus.h_top * 0.5 - 3 * board
 
+    if max_values[0] == 0 or max_values[0] == 0:
+        return 1, 1
+
     return b / max_values[0], h / max_values[1]
 
 

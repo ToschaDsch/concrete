@@ -461,11 +461,11 @@ class GeneralWindow(QMainWindow):
 
         layout.addLayout(layout_center_horizontal)
         layout_current_m_n = QHBoxLayout()
-        label_m_i = QLabel('M_i, kNm = ')
+        label_m_i = QLabel(MenuNames.m_i)
         layout_current_m_n.addWidget(label_m_i)
         layout_current_m_n.addWidget(self.label_current_moment_m_i)
 
-        label_n_i = QLabel('N_i, kN = ')
+        label_n_i = QLabel(MenuNames.dn_i)
         layout_current_m_n.addWidget(label_n_i)
         layout_current_m_n.addWidget(self.label_current_normal_force_n_i)
         layout_center_horizontal.addLayout(layout_current_m_n)
@@ -520,10 +520,10 @@ class GeneralWindow(QMainWindow):
         return None
 
     def update_round_section(self, data_round_section: dict):
-        self.checkbox_round_section.setChecked(data_round_section['is_round'])
         self.lineedit_R.setText(str(data_round_section['R']))
         self.lineedit_r.setText(str(data_round_section['r']))
         self.lineedit_nas_p.setText(str(data_round_section['n_as_p']))
+        self.checkbox_round_section.setChecked(data_round_section['is_round'])
 
     def send_other_variables_by_file_open(self, other_variables: dict):
         # sent diagram
@@ -542,10 +542,14 @@ class GeneralWindow(QMainWindow):
         # sent variables
         n = int(other_variables['n'])
         self.line_edit_n.setText(str(n))
+
         normal_force = float(other_variables['normal_force'])
         self.line_edit_normal_force.setText(str(normal_force))
         eccentricity = float(other_variables['eccentricity'])
         self.line_edit_eccentricity.setText(str(eccentricity))
+        self._section.eccentricity = eccentricity
+        self._section.normal_force = normal_force
+
         dn = float(other_variables['dn'])
         self.line_edit_dn.setText(str(dn))
         n_de = int(other_variables['n_de'])
@@ -665,11 +669,10 @@ class GeneralWindow(QMainWindow):
         text = self.line_edit_eccentricity.text()
         text = text.replace(',', '.')
         if text == '' or text == '.' or text == '-.':
-            return False
+            return
         eccentricity = correct_a_string(string=text)
         self._section.eccentricity = eccentricity
-        self.draw_date_and_results()
-        return None
+        self.draw_all()
 
     def layout_edit_n(self, layout: QVBoxLayout):
         layout_edit_top = QHBoxLayout()
@@ -848,7 +851,10 @@ class GeneralWindow(QMainWindow):
                     item_i = self.list_of_combobox_steel[row]
                     t = item_i.currentText()
                 else:
-                    text = item.text()
+                    if item is None:
+                        text = "0"
+                    else:
+                        text = item.text()
                     t = correct_a_string(string=str(text), only_positive=True)
                 dict_of_parameters[key] = t
             dict_of_parameters_all[row] = dict_of_parameters
@@ -857,13 +863,20 @@ class GeneralWindow(QMainWindow):
     def scan_steel_table_make_list_of_steel(self):
         self._section.list_of_steel = []
         dict_of_parameters_all = self.scan_steel_table_make_list_of_steel_make_a_dict_of_parameters()
-        for key, dict_of_parameters in dict_of_parameters_all.items():
-            if self._section.round_section:
-                self.make_list_of_line_steel_from_parameters_for_round_section(dict_of_parameters)
-            else:
-                self.make_list_of_line_steel_from_parameters_for_not_round_section(dict_of_parameters)
+        dict_of_steel = {}
 
-    def make_list_of_line_steel_from_parameters_for_not_round_section(self, dict_of_parameters: dict):
+        if self._section.round_section:
+            for key, dict_of_parameters in dict_of_parameters_all.items():
+                    dict_of_steel[key] = self.make_list_of_line_steel_from_parameters_for_round_section(dict_of_parameters)
+            for i, as_i in dict_of_steel.items():
+                Menus.table_insert = True
+                self.table_steel.setItem(i, 7, QTableWidgetItem(str(round(as_i, 2))))
+                Menus.table_insert = False
+        else:
+            for key, dict_of_parameters in dict_of_parameters_all.items():
+                dict_of_steel[key] = self.make_list_of_line_steel_from_parameters_for_not_round_section(dict_of_parameters)
+
+    def make_list_of_line_steel_from_parameters_for_not_round_section(self, dict_of_parameters: dict) -> float:
         header = MenuNames.horizontal_header_steel
         n = int(dict_of_parameters[header[3]])
         steel_typ = dict_of_parameters[header[5]]
@@ -874,8 +887,9 @@ class GeneralWindow(QMainWindow):
         type_of_diagram = self._section.type_of_diagram_steel
         new_section = ASteelLine(d=d, y=y, n=n, m=m, steel=steel_typ, s0=s0, typ_of_diagram=type_of_diagram)
         self._section.list_of_steel.append(new_section)
+        return new_section.area
 
-    def make_list_of_line_steel_from_parameters_for_round_section(self, dict_of_parameters: dict):
+    def make_list_of_line_steel_from_parameters_for_round_section(self, dict_of_parameters: dict) -> float:
         """ ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']"""
         header = MenuNames.horizontal_header_steel
         n = int(dict_of_parameters[header[3]])
@@ -886,11 +900,14 @@ class GeneralWindow(QMainWindow):
         d = dict_of_parameters[header[1]]
         m = dict_of_parameters[header[2]]
         s0 = dict_of_parameters[header[6]]
+        as_i = 0
         for i in range(n):
             y = self._section.R - math.sin(i*df_i)*r
             x = math.cos(i*df_i)*r
             line_steel = ASteelLine(d=d, y=y, x=x, m=m, n=1,s0=s0,steel=steel_typ, row=row)
+            as_i += line_steel.area
             self._section.list_of_steel.append(line_steel)
+        return as_i
 
 
     def steel_table_changed_item(self, item) -> None | bool:
@@ -909,7 +926,7 @@ class GeneralWindow(QMainWindow):
         text = text.replace(',', '.')
         t = correct_a_string(string=text, only_positive=True) if j != 5 else text
         n_section = len(self._section.list_of_steel) - 1 - i
-        steel_line = self._section.list_of_steel[n_section]
+        steel_line: ASteelLine = self._section.list_of_steel[n_section]
         d, y, n, m, steel, s0 = steel_line.get_d_y_n_m_steel_s0()
         match j:
             case 0:
@@ -927,6 +944,11 @@ class GeneralWindow(QMainWindow):
 
         steel_line.new_d_y_n_m_steel_s0(d=d, y=y, n=n, m=m, steel=steel, s0=s0,
                                         type_of_diagram=self._section.type_of_diagram_steel)
+        as_i = steel_line.area
+        Menus.table_insert = True
+        item = QTableWidgetItem(str(round(as_i, 2)))
+        self.table_steel.setItem(i, 7, item)
+        Menus.table_insert = False
         self.draw_date_and_results()
         return None
 
@@ -951,8 +973,13 @@ class GeneralWindow(QMainWindow):
         self.table_steel.setColumnCount(len(header))
         self.table_steel.setHorizontalHeaderLabels(header)
         bi = b / len(header)
+        k = 4
         for i in range(len(header)):
-            self.table_steel.setColumnWidth(i, int(bi))
+            if i == 5:
+                l_i = int(bi) + k*(len(header)-1)
+            else:
+                l_i = int(bi) - k
+            self.table_steel.setColumnWidth(i, l_i)
         self.table_steel.itemChanged.connect(self.steel_table_changed_item)
         self.table_steel.itemSelectionChanged.connect(self.selection_changed_steel)
         steel_layout.addWidget(self.table_steel)

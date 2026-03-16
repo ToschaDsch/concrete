@@ -119,7 +119,7 @@ class TypeOfDiagram:
 
 @dataclass
 class MenuNames:
-    horizontal_header_steel = ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2']
+    horizontal_header_steel = ['Nr.', '⌀, mm.', 'm', 'n', 'y, cm', 'Type', 'σ0, N/mm2', "As(p)_i, cm2"]
     horizontal_header_concrete = ['bu, cm.', 'bo, cm.', 't, cm']
     horizontal_header_concrete_carbon = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
     horizontal_header_additional_concrete = ('A, cm2', 'Typ', 'z, cm', 'M_int, kNm')
@@ -132,6 +132,8 @@ class MenuNames:
     convergence = 'Konvergenz - '
     n_de_info = 'Diagramme werden auf'
     explanation_normal_force = 'Zug ist positiv'
+    m_i = 'M_i, kNm = '
+    dn_i = '∆N_i, kNm = '
     label_concrete = "Beton"
     round_section = "ringformiger Querschnitt"
     label_steel = "Bewehrung"

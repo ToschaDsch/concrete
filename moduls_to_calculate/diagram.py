@@ -52,7 +52,7 @@ class DiagramConcrete(Diagram):
         match typ_of_diagram:
             case 0:
                 if ec < self._ec2:
-                    if self._concrete_class not in ('C55/67', 'C60/75', 'C70/85', 'C80/95', 'C90/105'):
+                    if self._concrete_class not in ('C55/67', 'C60/75', 'C70/85', 'C80/95', 'C90/105', 'C80/95_(1,35)'):
                         return 1000 * (ec - 250 * ec ** 2) * self._fcd
                     else:
                         return (1 - (1 - ec / self._ec2) ** self._n) * self._fcd

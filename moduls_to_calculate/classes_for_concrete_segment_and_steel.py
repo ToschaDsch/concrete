@@ -164,6 +164,10 @@ class ASteelLine(ElementOfSection):
         self.row = row
 
     @property
+    def area(self):
+        return self._area/100
+
+    @property
     def x_y(self):
         return [self._x, self._y]
 

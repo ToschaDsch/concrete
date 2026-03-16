@@ -55,7 +55,7 @@ def concrete_to_list(section: AllElementsOfTheSection) -> list:
                            'bu': 10,
                            'y0': 0,
                            'h': 20,
-                           'concrete_class': "C25/30"})
+                           'concrete_class': section.concrete_class})
     else:
         for section_i in section.list_of_concrete_sections:
             list_of_all_sections.append(a_concrete_section_to_dict(section=section_i))
