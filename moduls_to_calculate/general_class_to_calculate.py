@@ -146,6 +146,7 @@ class AllElementsOfTheSection:
 
     @n.setter
     def n(self, new_value: int):
+        print("new n", new_value)
         self._n = new_value
         self.is_calculated = False
         self.divide_all_concrete_sections()

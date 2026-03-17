@@ -3,7 +3,7 @@ import sys
 
 from PySide6 import QtWidgets, QtGui
 
-from general_menu import GeneralWindow
+from frontend.general_menu import GeneralWindow
 from variables.variables_the_program import Menus
 
 

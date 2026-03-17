@@ -14,8 +14,8 @@ from moduls_to_calculate.general_class_to_calculate import AllElementsOfTheSecti
 from moduls_to_calculate.classes_for_concrete_segment_and_steel import AConcreteSection, ASteelLine
 
 from moduls_to_calculate.diagram import DiagramToDraw
-from save_open.open import open_file
-from save_open.save import save_file_as
+from frontend.save_open.open import open_file
+from frontend.save_open.save import save_file_as
 from variables import variables_the_program
 from variables.variables_the_program import Menus, MyColors, PenThicknessToDraw, TypeOfDiagram, Names, MenuNames, \
     InitiationValues
@@ -492,12 +492,12 @@ class GeneralWindow(QMainWindow):
         toolbar = QToolBar("My main toolbar")
         self.addToolBar(toolbar)
 
-        button_open = QAction(QIcon("icons//open.png"), 'open', self)
+        button_open = QAction(QIcon("../icons/open.png"), 'open', self)
         button_open.setStatusTip('open')
         button_open.triggered.connect(self.open_file)
         toolbar.addAction(button_open)
 
-        button_save = QAction(QIcon("icons//save.png"), 'save', self)
+        button_save = QAction(QIcon("../icons/save.png"), 'save', self)
         button_save.setStatusTip('save')
         button_save.triggered.connect(self.save_file)
         toolbar.addAction(button_save)
@@ -688,17 +688,17 @@ class GeneralWindow(QMainWindow):
         layout_edit_n.addWidget(label_after)
         layout.addLayout(layout_edit_top)
         layout.addLayout(layout_edit_n)
-        self.draw_all()
 
     def change_n(self):
         """parts of segments in the concrete section"""
         text = self.line_edit_n.text()
+        print("nnnn")
         if text == '' or text == '.' or text == '-.':
-            return False
+            return
         n = correct_a_string(string=text, only_positive=True, int_=True)
         self._section.n = n
-        self.draw_date_and_results()
-        return None
+        self.draw_all()
+        return
 
     def radiobutton_concrete(self, layout: QVBoxLayout):
         label_concrete = QLabel(MenuNames.concrete_diagram)
@@ -1078,12 +1078,10 @@ class GeneralWindow(QMainWindow):
 
     def draw_date_and_results(self):
         self.draw_all()
-
         if not self._section.is_calculated:
             self.slider.setEnabled(False)
-            return None
+            return
         self.make_results_enabled()
-        return None
 
     def make_results_enabled(self):
         self.slider.setEnabled(True)
@@ -1633,10 +1631,9 @@ class GeneralWindow(QMainWindow):
     def draw_stress_and_deformation(self, mi: float = 0):
         result: Result = self.make_result_for_mi(mi=mi)
         if result is None:
-            return None
+            return
         self.label_current_normal_force_n_i.setText(str(round(result.dn, 2)))
         self.draw_the_graph(result=result)
-        return None
 
     def make_result_for_mi(self, mi: float) -> Result | None:
         """the function interpolate new graphic for current m_i"""
